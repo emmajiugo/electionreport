@@ -1,0 +1,356 @@
+[
+    {
+        "code": "37",
+        "name": "Federal Capital Territory",
+        "lgas": [
+            {
+                "code": "01",
+                "name": "Abaji",
+                "wards": [
+                    {
+                        "code": "01",
+                        "name": "Sample Ward 01",
+                        "polling_units": [
+                            {
+                                "code": "37/01/01/001",
+                                "name": "Sample Polling Unit 001"
+                            },
+                            {
+                                "code": "37/01/01/002",
+                                "name": "Sample Polling Unit 002"
+                            },
+                            {
+                                "code": "37/01/01/003",
+                                "name": "Sample Polling Unit 003"
+                            }
+                        ]
+                    },
+                    {
+                        "code": "02",
+                        "name": "Sample Ward 02",
+                        "polling_units": [
+                            {
+                                "code": "37/01/02/001",
+                                "name": "Sample Polling Unit 001"
+                            },
+                            {
+                                "code": "37/01/02/002",
+                                "name": "Sample Polling Unit 002"
+                            },
+                            {
+                                "code": "37/01/02/003",
+                                "name": "Sample Polling Unit 003"
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "code": "02",
+                "name": "Abuja Municipal Area Council",
+                "wards": [
+                    {
+                        "code": "01",
+                        "name": "Sample Ward 01",
+                        "polling_units": [
+                            {
+                                "code": "37/02/01/001",
+                                "name": "Sample Polling Unit 001"
+                            },
+                            {
+                                "code": "37/02/01/002",
+                                "name": "Sample Polling Unit 002"
+                            },
+                            {
+                                "code": "37/02/01/003",
+                                "name": "Sample Polling Unit 003"
+                            }
+                        ]
+                    },
+                    {
+                        "code": "02",
+                        "name": "Sample Ward 02",
+                        "polling_units": [
+                            {
+                                "code": "37/02/02/001",
+                                "name": "Sample Polling Unit 001"
+                            },
+                            {
+                                "code": "37/02/02/002",
+                                "name": "Sample Polling Unit 002"
+                            },
+                            {
+                                "code": "37/02/02/003",
+                                "name": "Sample Polling Unit 003"
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "code": "03",
+                "name": "Bwari",
+                "wards": [
+                    {
+                        "code": "01",
+                        "name": "Sample Ward 01",
+                        "polling_units": [
+                            {
+                                "code": "37/03/01/001",
+                                "name": "Sample Polling Unit 001"
+                            },
+                            {
+                                "code": "37/03/01/002",
+                                "name": "Sample Polling Unit 002"
+                            },
+                            {
+                                "code": "37/03/01/003",
+                                "name": "Sample Polling Unit 003"
+                            }
+                        ]
+                    },
+                    {
+                        "code": "02",
+                        "name": "Sample Ward 02",
+                        "polling_units": [
+                            {
+                                "code": "37/03/02/001",
+                                "name": "Sample Polling Unit 001"
+                            },
+                            {
+                                "code": "37/03/02/002",
+                                "name": "Sample Polling Unit 002"
+                            },
+                            {
+                                "code": "37/03/02/003",
+                                "name": "Sample Polling Unit 003"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "code": "24",
+        "name": "Lagos",
+        "lgas": [
+            {
+                "code": "01",
+                "name": "Agege",
+                "wards": [
+                    {
+                        "code": "01",
+                        "name": "Sample Ward 01",
+                        "polling_units": [
+                            {
+                                "code": "24/01/01/001",
+                                "name": "Sample Polling Unit 001"
+                            },
+                            {
+                                "code": "24/01/01/002",
+                                "name": "Sample Polling Unit 002"
+                            },
+                            {
+                                "code": "24/01/01/003",
+                                "name": "Sample Polling Unit 003"
+                            }
+                        ]
+                    },
+                    {
+                        "code": "02",
+                        "name": "Sample Ward 02",
+                        "polling_units": [
+                            {
+                                "code": "24/01/02/001",
+                                "name": "Sample Polling Unit 001"
+                            },
+                            {
+                                "code": "24/01/02/002",
+                                "name": "Sample Polling Unit 002"
+                            },
+                            {
+                                "code": "24/01/02/003",
+                                "name": "Sample Polling Unit 003"
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "code": "10",
+                "name": "Ikeja",
+                "wards": [
+                    {
+                        "code": "01",
+                        "name": "Sample Ward 01",
+                        "polling_units": [
+                            {
+                                "code": "24/10/01/001",
+                                "name": "Sample Polling Unit 001"
+                            },
+                            {
+                                "code": "24/10/01/002",
+                                "name": "Sample Polling Unit 002"
+                            },
+                            {
+                                "code": "24/10/01/003",
+                                "name": "Sample Polling Unit 003"
+                            }
+                        ]
+                    },
+                    {
+                        "code": "02",
+                        "name": "Sample Ward 02",
+                        "polling_units": [
+                            {
+                                "code": "24/10/02/001",
+                                "name": "Sample Polling Unit 001"
+                            },
+                            {
+                                "code": "24/10/02/002",
+                                "name": "Sample Polling Unit 002"
+                            },
+                            {
+                                "code": "24/10/02/003",
+                                "name": "Sample Polling Unit 003"
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "code": "18",
+                "name": "Surulere",
+                "wards": [
+                    {
+                        "code": "01",
+                        "name": "Sample Ward 01",
+                        "polling_units": [
+                            {
+                                "code": "24/18/01/001",
+                                "name": "Sample Polling Unit 001"
+                            },
+                            {
+                                "code": "24/18/01/002",
+                                "name": "Sample Polling Unit 002"
+                            },
+                            {
+                                "code": "24/18/01/003",
+                                "name": "Sample Polling Unit 003"
+                            }
+                        ]
+                    },
+                    {
+                        "code": "02",
+                        "name": "Sample Ward 02",
+                        "polling_units": [
+                            {
+                                "code": "24/18/02/001",
+                                "name": "Sample Polling Unit 001"
+                            },
+                            {
+                                "code": "24/18/02/002",
+                                "name": "Sample Polling Unit 002"
+                            },
+                            {
+                                "code": "24/18/02/003",
+                                "name": "Sample Polling Unit 003"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "code": "19",
+        "name": "Kano",
+        "lgas": [
+            {
+                "code": "28",
+                "name": "Kano Municipal",
+                "wards": [
+                    {
+                        "code": "01",
+                        "name": "Sample Ward 01",
+                        "polling_units": [
+                            {
+                                "code": "19/28/01/001",
+                                "name": "Sample Polling Unit 001"
+                            },
+                            {
+                                "code": "19/28/01/002",
+                                "name": "Sample Polling Unit 002"
+                            },
+                            {
+                                "code": "19/28/01/003",
+                                "name": "Sample Polling Unit 003"
+                            }
+                        ]
+                    },
+                    {
+                        "code": "02",
+                        "name": "Sample Ward 02",
+                        "polling_units": [
+                            {
+                                "code": "19/28/02/001",
+                                "name": "Sample Polling Unit 001"
+                            },
+                            {
+                                "code": "19/28/02/002",
+                                "name": "Sample Polling Unit 002"
+                            },
+                            {
+                                "code": "19/28/02/003",
+                                "name": "Sample Polling Unit 003"
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "code": "30",
+                "name": "Nasarawa",
+                "wards": [
+                    {
+                        "code": "01",
+                        "name": "Sample Ward 01",
+                        "polling_units": [
+                            {
+                                "code": "19/30/01/001",
+                                "name": "Sample Polling Unit 001"
+                            },
+                            {
+                                "code": "19/30/01/002",
+                                "name": "Sample Polling Unit 002"
+                            },
+                            {
+                                "code": "19/30/01/003",
+                                "name": "Sample Polling Unit 003"
+                            }
+                        ]
+                    },
+                    {
+                        "code": "02",
+                        "name": "Sample Ward 02",
+                        "polling_units": [
+                            {
+                                "code": "19/30/02/001",
+                                "name": "Sample Polling Unit 001"
+                            },
+                            {
+                                "code": "19/30/02/002",
+                                "name": "Sample Polling Unit 002"
+                            },
+                            {
+                                "code": "19/30/02/003",
+                                "name": "Sample Polling Unit 003"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+]
