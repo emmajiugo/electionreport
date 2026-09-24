@@ -44,11 +44,11 @@ class Election extends Model
     /**
      * Parties accredited by INEC to contest this election.
      *
-     * @return BelongsToMany<Party, $this>
+     * @return BelongsToMany<Party, $this, ElectionParty>
      */
     public function parties(): BelongsToMany
     {
-        return $this->belongsToMany(Party::class);
+        return $this->belongsToMany(Party::class)->using(ElectionParty::class)->withPivot('candidate', 'running_mate');
     }
 
     /**

@@ -8,25 +8,24 @@ use Illuminate\Database\Seeder;
 class PartySeeder extends Seeder
 {
     /**
-     * Parties that fielded presidential candidates in 2023. Check INEC's final list for the
-     * election being monitored before going live. Logos are read from public/images/parties/{ACRONYM}.png;
-     * the ballot falls back to the acronym for any that are missing.
+     * Parties INEC accredited for the 2027 presidential election. Logos are read from
+     * public/images/parties/{ACRONYM}.png; the ballot falls back to the acronym for any that are missing.
      */
     public function run(): void
     {
         $parties = [
-            'A' => 'Accord',
             'AA' => 'Action Alliance',
             'AAC' => 'African Action Congress',
             'ADC' => 'African Democratic Congress',
             'ADP' => 'Action Democratic Party',
             'APC' => 'All Progressives Congress',
-            'APGA' => 'All Progressives Grand Alliance',
             'APM' => 'Allied Peoples Movement',
             'APP' => 'Action Peoples Party',
             'BP' => 'Boot Party',
+            'DLA' => 'Democratic Leadership Alliance',
             'LP' => 'Labour Party',
-            'NNPP' => 'New Nigeria Peoples Party',
+            'NDC' => 'Nigeria Democratic Congress',
+            'NDP' => 'National Democratic Party',
             'NRM' => 'National Rescue Movement',
             'PDP' => 'Peoples Democratic Party',
             'PRP' => 'Peoples Redemption Party',

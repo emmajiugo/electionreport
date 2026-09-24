@@ -13,6 +13,8 @@ export type Party = {
     acronym: string;
     name: string;
     logo_url: string | null;
+    candidate: string | null;
+    running_mate: string | null;
 };
 
 export type Election = {

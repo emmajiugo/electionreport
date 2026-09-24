@@ -42,12 +42,12 @@ class DemoReportSeeder extends Seeder
         $stateLeanings = $pollingUnits->pluck('state_id')->unique()
             ->mapWithKeys(fn (int $stateId): array => [$stateId => [
                 'APC' => mt_rand(10, 45),
-                'LP' => mt_rand(5, 40),
-                'PDP' => mt_rand(10, 35),
-                'NNPP' => mt_rand(0, 15),
-                'ADC' => mt_rand(0, 8),
+                'NDC' => mt_rand(5, 40),
+                'PDP' => mt_rand(0, 15),
+                'LP' => mt_rand(0, 10),
+                'ADC' => mt_rand(5, 35),
                 'SDP' => mt_rand(0, 4),
-                'APGA' => mt_rand(0, 4),
+                'AAC' => mt_rand(0, 4),
             ]]);
         $stateDisruption = $stateLeanings->map(fn (): int => mt_rand(2, 25));
 

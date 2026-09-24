@@ -32,6 +32,8 @@ class ReportController extends Controller
                     'acronym' => $party->acronym,
                     'name' => $party->name,
                     'logo_url' => $party->logo_url,
+                    'candidate' => $party->pivot->candidate,
+                    'running_mate' => $party->pivot->running_mate,
                 ]) ?? [],
             'states' => State::query()->orderBy('name')->get(['id', 'name']),
             'notHeldReasons' => ElectionNotHeldReason::options(),

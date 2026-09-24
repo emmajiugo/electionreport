@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property string $name
  * @property string|null $logo_path
  * @property-read string|null $logo_url
+ * @property-read ElectionParty $pivot Only set when loaded through Election::parties().
  */
 #[Fillable(['acronym', 'name', 'logo_path'])]
 class Party extends Model

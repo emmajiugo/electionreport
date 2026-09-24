@@ -15,7 +15,7 @@ const VIN = '90F5B1C3E2950123456';
 beforeEach(function () {
     $this->election = Election::factory()->create();
     $this->party = Party::factory()->create();
-    $this->election->parties()->attach($this->party);
+    $this->election->parties()->attach($this->party, ['candidate' => 'Ada Obi', 'running_mate' => 'Musa Bello']);
     $this->pollingUnit = PollingUnit::factory()->create();
 });
 
@@ -52,6 +52,8 @@ test('the report form lists the open election, its parties and reasons', functio
             ->where('maskedVin', '90F5***********3456')
             ->has('parties', 1)
             ->where('parties.0.acronym', $this->party->acronym)
+            ->where('parties.0.candidate', 'Ada Obi')
+            ->where('parties.0.running_mate', 'Musa Bello')
             ->has('states', 1)
             ->has('notHeldReasons', count(ElectionNotHeldReason::cases()))
             ->has('notVotedReasons', count(NotVotedReason::cases())));
