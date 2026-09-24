@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { Head, Link, useForm } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
-import AppHeader from '@/components/AppHeader.vue';
-import TurnstileWidget from '@/components/TurnstileWidget.vue';
-import { results } from '@/routes';
-import { store } from '@/routes/vin';
-import type { Election } from '@/types';
+import { Head, Link, useForm, usePage } from "@inertiajs/vue3";
+import { computed, ref } from "vue";
+import AppHeader from "@/components/AppHeader.vue";
+import TurnstileWidget from "@/components/TurnstileWidget.vue";
+import { results } from "@/routes";
+import { store } from "@/routes/vin";
+import type { Election } from "@/types";
 
 defineProps<{
     election: Election | null;
@@ -13,12 +13,16 @@ defineProps<{
 }>();
 
 const VIN_LENGTH = 19;
+const VIN_CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
-const form = useForm({ vin: '', turnstile_token: '' });
+const page = usePage();
+const isTestMode = computed(() => page.props.mode === "test");
+
+const form = useForm({ vin: "", turnstile_token: "" });
 const turnstile = ref<InstanceType<typeof TurnstileWidget> | null>(null);
 
 const normalizedVin = computed(() =>
-    form.vin.replace(/[^a-z0-9]/gi, '').toUpperCase(),
+    form.vin.replace(/[^a-z0-9]/gi, "").toUpperCase(),
 );
 
 // Raised by the server when no election is open; it has no matching form field.
@@ -29,9 +33,20 @@ const electionError = computed(
 const canSubmit = computed(
     () =>
         normalizedVin.value.length === VIN_LENGTH &&
-        form.turnstile_token !== '' &&
+        form.turnstile_token !== "" &&
         !form.processing,
 );
+
+// Testers use a made-up VIN so nobody has to type a real one into a practice site.
+function generateTestVin(): void {
+    const characters = Array.from(
+        crypto.getRandomValues(new Uint32Array(VIN_LENGTH)),
+        (value) => VIN_CHARACTERS[value % VIN_CHARACTERS.length],
+    ).join("");
+
+    form.vin = characters.match(/.{1,4}/g)!.join(" ");
+    form.clearErrors("vin");
+}
 
 function submit(): void {
     if (!canSubmit.value) {
@@ -115,6 +130,14 @@ function submit(): void {
                     placeholder="e.g. 90F5 B1C3 E295 0123 456"
                     class="rounded-xl border border-gray-300 bg-white p-3 font-mono text-lg tracking-wider uppercase placeholder:normal-case dark:border-gray-700 dark:bg-gray-900"
                 />
+                <button
+                    v-if="isTestMode"
+                    type="button"
+                    class="self-start rounded-lg border border-amber-500 px-3 py-2 text-sm font-medium text-amber-800 dark:text-amber-300"
+                    @click="generateTestVin"
+                >
+                    Generate a test VIN
+                </button>
                 <p class="text-sm text-gray-500">
                     {{ VIN_LENGTH }} characters, printed on your PVC.
                     {{ normalizedVin.length }}/{{ VIN_LENGTH }}
@@ -144,7 +167,7 @@ function submit(): void {
                     :disabled="!canSubmit"
                     class="w-full rounded-xl bg-green-700 p-4 text-lg font-semibold text-white disabled:opacity-40"
                 >
-                    {{ form.processing ? 'Checking…' : 'Continue' }}
+                    {{ form.processing ? "Checking…" : "Continue" }}
                 </button>
                 <Link
                     :href="results()"
