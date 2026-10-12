@@ -37,8 +37,15 @@ const isTestMode = computed(() => page.props.mode === 'test');
                     <path d="M15 18l-6-6 6-6" />
                 </svg>
             </button>
-            <span class="font-semibold text-green-800 dark:text-green-400">
-                ElectionWatch
+            <span class="flex items-center gap-2 font-semibold">
+                <img src="/favicon.svg" alt="" class="size-7" />
+                <span
+                    ><span class="text-gray-800 dark:text-gray-100"
+                        >Election</span
+                    ><span class="text-green-700 dark:text-green-400"
+                        >Watch</span
+                    ></span
+                >
             </span>
             <span
                 v-if="isTestMode"
