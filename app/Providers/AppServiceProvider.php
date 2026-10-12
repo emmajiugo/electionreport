@@ -31,22 +31,17 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
-     * Limits stay loose per IP because Nigerian mobile carriers put many voters behind one
-     * carrier-grade NAT address; duplicate VINs are the primary defence, not IP limits.
+     * Limits are keyed per session, not IP, because Nigerian mobile carriers put many voters behind
+     * one carrier-grade NAT address. Turnstile on VIN entry is the bot defence: every other limited
+     * route needs a session that has already passed it.
      */
     protected function configureRateLimiting(): void
     {
-        RateLimiter::for('reports', fn (Request $request): array => [
-            Limit::perMinute(10)->by('minute:'.$request->ip()),
-            Limit::perDay(200)->by('day:'.$request->ip()),
-        ]);
+        RateLimiter::for('reports', fn (Request $request): Limit => Limit::perMinute(10)->by('reports:'.$request->session()->getId()));
 
-        RateLimiter::for('vin', fn (Request $request): array => [
-            Limit::perMinute(10)->by('vin-minute:'.$request->ip()),
-            Limit::perDay(200)->by('vin-day:'.$request->ip()),
-        ]);
+        RateLimiter::for('vin', fn (Request $request): Limit => Limit::perMinute(10)->by('vin:'.$request->session()->getId()));
 
-        RateLimiter::for('locations', fn (Request $request): Limit => Limit::perMinute(120)->by($request->ip()));
+        RateLimiter::for('locations', fn (Request $request): Limit => Limit::perMinute(60)->by('locations:'.$request->session()->getId()));
     }
 
     /**

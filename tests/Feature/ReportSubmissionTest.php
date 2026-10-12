@@ -8,6 +8,7 @@ use App\Models\Party;
 use App\Models\PollingUnit;
 use App\Models\Report;
 use App\Support\VoterIdentificationNumber;
+use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
 
 const VIN = '90F5B1C3E2950123456';
@@ -170,7 +171,9 @@ test('reports are rejected when no election is accepting them', function () {
     expect(Report::count())->toBe(0);
 });
 
-test('report submissions are rate limited per IP', function () {
+test('report submissions are rate limited per session, not per shared IP', function () {
+    $this->withCookie(config('session.cookie'), Str::random(40));
+
     foreach (range(1, 10) as $attempt) {
         enterVin(str_pad((string) $attempt, 19, 'A'));
         $this->post(route('reports.store'), votedReport());
@@ -179,5 +182,9 @@ test('report submissions are rate limited per IP', function () {
     enterVin(str_repeat('B', 19));
     $this->post(route('reports.store'), votedReport())->assertTooManyRequests();
 
-    expect(Report::count())->toBe(10);
+    $this->withCookie(config('session.cookie'), Str::random(40))
+        ->post(route('reports.store'), votedReport())
+        ->assertRedirect(route('reports.submitted'));
+
+    expect(Report::count())->toBe(11);
 });

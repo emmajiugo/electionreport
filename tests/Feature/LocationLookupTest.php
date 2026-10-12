@@ -5,6 +5,7 @@ use App\Models\Lga;
 use App\Models\PollingUnit;
 use App\Models\State;
 use App\Models\Ward;
+use Illuminate\Support\Str;
 
 beforeEach(function () {
     $this->withSession([EnsureVinEntered::SESSION_KEY => ['hash' => 'hash', 'masked' => 'masked']]);
@@ -48,4 +49,19 @@ test('polling units are listed for the chosen ward with their INEC code', functi
 
 test('an unknown parent returns not found', function () {
     $this->getJson(route('locations.lgas', 999))->assertNotFound();
+});
+
+test('location lookups are rate limited per session, not per shared IP', function () {
+    $state = State::factory()->create();
+    $this->withCredentials()->withCookie(config('session.cookie'), Str::random(40));
+
+    foreach (range(1, 60) as $attempt) {
+        $this->getJson(route('locations.lgas', $state))->assertOk();
+    }
+
+    $this->getJson(route('locations.lgas', $state))->assertTooManyRequests();
+
+    $this->withCookie(config('session.cookie'), Str::random(40))
+        ->getJson(route('locations.lgas', $state))
+        ->assertOk();
 });

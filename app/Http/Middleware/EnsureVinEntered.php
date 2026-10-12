@@ -9,7 +9,7 @@ use Symfony\Component\HttpFoundation\Response;
 class EnsureVinEntered
 {
     /**
-     * Holds only the VIN's hash and masked form; sessions live in the database, so the raw VIN must never be stored here.
+     * Holds only the VIN's hash and masked form; sessions are stored server-side, so the raw VIN must never be stored here.
      */
     public const string SESSION_KEY = 'report_vin';
 

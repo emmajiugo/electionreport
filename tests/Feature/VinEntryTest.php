@@ -7,6 +7,7 @@ use App\Rules\Turnstile;
 use App\Support\VoterIdentificationNumber;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
 
 const ENTERED_VIN = '90F5B1C3E2950123456';
@@ -109,10 +110,16 @@ test('a VIN cannot be entered when no election is accepting reports', function (
         ->assertSessionMissing(EnsureVinEntered::SESSION_KEY);
 });
 
-test('VIN entry is rate limited per IP', function () {
+test('VIN entry is rate limited per session, not per shared IP', function () {
+    $this->withCookie(config('session.cookie'), Str::random(40));
+
     foreach (range(1, 10) as $attempt) {
         $this->post(route('vin.store'), ['turnstile_token' => 'token', 'vin' => ENTERED_VIN]);
     }
 
     $this->post(route('vin.store'), ['turnstile_token' => 'token', 'vin' => ENTERED_VIN])->assertTooManyRequests();
+
+    $this->withCookie(config('session.cookie'), Str::random(40))
+        ->post(route('vin.store'), ['turnstile_token' => 'token', 'vin' => ENTERED_VIN])
+        ->assertRedirect(route('reports.create'));
 });
