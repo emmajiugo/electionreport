@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { Head, Link, useForm } from "@inertiajs/vue3";
-import { computed, ref, watch } from "vue";
-import AppHeader from "@/components/AppHeader.vue";
-import PartyLogo from "@/components/PartyLogo.vue";
-import ReasonPicker from "@/components/ReasonPicker.vue";
-import { home } from "@/routes";
-import { lgas, pollingUnits, wards } from "@/routes/locations";
-import { store } from "@/routes/reports";
-import type { Election, Option, Party, ReasonOption } from "@/types";
+import { Head, Link, useForm } from '@inertiajs/vue3';
+import { computed, ref, watch } from 'vue';
+import AppHeader from '@/components/AppHeader.vue';
+import PartyLogo from '@/components/PartyLogo.vue';
+import ReasonPicker from '@/components/ReasonPicker.vue';
+import { home } from '@/routes';
+import { lgas, pollingUnits, wards } from '@/routes/locations';
+import { store } from '@/routes/reports';
+import type { Election, Option, Party, ReasonOption } from '@/types';
 
 const props = defineProps<{
     election: Election | null;
@@ -19,14 +19,14 @@ const props = defineProps<{
 }>();
 
 type Step =
-    | "location"
-    | "held"
-    | "notHeldReason"
-    | "voted"
-    | "notVotedReason"
-    | "party";
+    | 'location'
+    | 'held'
+    | 'notHeldReason'
+    | 'voted'
+    | 'notVotedReason'
+    | 'party';
 
-const step = ref<Step>("location");
+const step = ref<Step>('location');
 const history = ref<Step[]>([]);
 
 const form = useForm({
@@ -36,8 +36,8 @@ const form = useForm({
     voted: null as boolean | null,
     not_voted_reason: null as string | null,
     party_id: null as number | null,
-    reason_details: "",
-    website: "",
+    reason_details: '',
+    website: '',
 });
 
 const stateId = ref<number | null>(null);
@@ -46,13 +46,13 @@ const wardId = ref<number | null>(null);
 const lgaOptions = ref<Option[]>([]);
 const wardOptions = ref<Option[]>([]);
 const pollingUnitOptions = ref<Option[]>([]);
-const pollingUnitQuery = ref("");
+const pollingUnitQuery = ref('');
 
 // Some wards have close to 300 units, far too many to scroll through on a phone.
 const filteredPollingUnits = computed(() => {
     const query = pollingUnitQuery.value.trim().toLowerCase();
 
-    if (query === "") {
+    if (query === '') {
         return pollingUnitOptions.value;
     }
 
@@ -71,7 +71,7 @@ async function fetchOptions(url: string): Promise<Option[]> {
 
     try {
         const response = await fetch(url, {
-            headers: { Accept: "application/json" },
+            headers: { Accept: 'application/json' },
         });
 
         if (!response.ok) {
@@ -81,7 +81,7 @@ async function fetchOptions(url: string): Promise<Option[]> {
         return (await response.json()) as Option[];
     } catch {
         locationError.value =
-            "Could not load locations. Check your connection and try again.";
+            'Could not load locations. Check your connection and try again.';
 
         return [];
     } finally {
@@ -101,7 +101,7 @@ watch(lgaId, async (id) => {
 
 watch(wardId, async (id) => {
     form.polling_unit_id = null;
-    pollingUnitQuery.value = "";
+    pollingUnitQuery.value = '';
     pollingUnitOptions.value = id
         ? await fetchOptions(pollingUnits.url(id))
         : [];
@@ -109,13 +109,13 @@ watch(wardId, async (id) => {
 
 const canContinue = computed(() => {
     switch (step.value) {
-        case "location":
+        case 'location':
             return form.polling_unit_id !== null;
-        case "notHeldReason":
+        case 'notHeldReason':
             return hasReason(form.not_held_reason);
-        case "notVotedReason":
+        case 'notVotedReason':
             return hasReason(form.not_voted_reason);
-        case "party":
+        case 'party':
             return form.party_id !== null;
         default:
             return false;
@@ -123,7 +123,7 @@ const canContinue = computed(() => {
 });
 
 const isFinalStep = computed(() =>
-    ["notHeldReason", "notVotedReason", "party"].includes(step.value),
+    ['notHeldReason', 'notVotedReason', 'party'].includes(step.value),
 );
 
 function hasReason(reason: string | null): boolean {
@@ -131,7 +131,7 @@ function hasReason(reason: string | null): boolean {
         return false;
     }
 
-    return reason !== "other" || form.reason_details.trim() !== "";
+    return reason !== 'other' || form.reason_details.trim() !== '';
 }
 
 function goTo(next: Step): void {
@@ -149,12 +149,12 @@ function back(): void {
 
 function answerHeld(held: boolean): void {
     form.election_held = held;
-    goTo(held ? "voted" : "notHeldReason");
+    goTo(held ? 'voted' : 'notHeldReason');
 }
 
 function answerVoted(voted: boolean): void {
     form.voted = voted;
-    goTo(voted ? "party" : "notVotedReason");
+    goTo(voted ? 'party' : 'notVotedReason');
 }
 
 function next(): void {
@@ -162,8 +162,8 @@ function next(): void {
         return;
     }
 
-    if (step.value === "location") {
-        goTo("held");
+    if (step.value === 'location') {
+        goTo('held');
     } else if (isFinalStep.value) {
         submit();
     }
@@ -177,10 +177,10 @@ const formError = computed(() => {
 });
 
 const stepForField: Record<string, Step> = {
-    polling_unit_id: "location",
-    not_held_reason: "notHeldReason",
-    not_voted_reason: "notVotedReason",
-    party_id: "party",
+    polling_unit_id: 'location',
+    not_held_reason: 'notHeldReason',
+    not_voted_reason: 'notVotedReason',
+    party_id: 'party',
 };
 
 function submit(): void {
@@ -196,7 +196,7 @@ function submit(): void {
         not_voted_reason: held && !voted ? data.not_voted_reason : null,
         party_id: voted ? data.party_id : null,
         reason_details:
-            !voted && reason === "other" ? data.reason_details : null,
+            !voted && reason === 'other' ? data.reason_details : null,
     })).post(store.url(), {
         onError: (errors) => {
             const field = Object.keys(errors).find(
@@ -217,25 +217,25 @@ function submit(): void {
 
 const title = computed(() => {
     switch (step.value) {
-        case "location":
-            return "Where is your polling unit?";
-        case "held":
-            return "Did the election hold at your polling unit?";
-        case "notHeldReason":
-            return "Why did the election not hold?";
-        case "voted":
-            return "Did you vote?";
-        case "notVotedReason":
-            return "Why were you unable to vote?";
-        case "party":
-            return "Which party did you vote for?";
+        case 'location':
+            return 'Where is your polling unit?';
+        case 'held':
+            return 'Did the election hold at your polling unit?';
+        case 'notHeldReason':
+            return 'Why did the election not hold?';
+        case 'voted':
+            return 'Did you vote?';
+        case 'notVotedReason':
+            return 'Why were you unable to vote?';
+        case 'party':
+            return 'Which party did you vote for?';
         default:
-            return "";
+            return '';
     }
 });
 
 const selectClass =
-    "w-full rounded-xl border border-gray-300 bg-white p-3 text-base disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900";
+    'w-full rounded-xl border border-gray-300 bg-white p-3 text-base disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900';
 </script>
 
 <template>
@@ -361,8 +361,8 @@ const selectClass =
                         <option :value="null" disabled>
                             {{
                                 pollingUnitQuery && !filteredPollingUnits.length
-                                    ? "No polling units match your search"
-                                    : `Select polling unit${pollingUnitQuery ? ` (${filteredPollingUnits.length} found)` : ""}`
+                                    ? 'No polling units match your search'
+                                    : `Select polling unit${pollingUnitQuery ? ` (${filteredPollingUnits.length} found)` : ''}`
                             }}
                         </option>
                         <option
@@ -501,10 +501,10 @@ const selectClass =
                 >
                     {{
                         form.processing
-                            ? "Submitting…"
+                            ? 'Submitting…'
                             : isFinalStep
-                              ? "Submit report"
-                              : "Continue"
+                              ? 'Submit report'
+                              : 'Continue'
                     }}
                 </button>
             </div>
