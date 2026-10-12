@@ -29,7 +29,7 @@ import { results } from '@/routes';
             </div>
             <h1 class="text-2xl font-semibold">Thank you for reporting</h1>
             <p class="max-w-sm text-gray-600 dark:text-gray-400">
-                We've recorded your report. Share ElectionWatch with other
+                We've recorded your report. Share ElectionReport with other
                 voters so more polling units get monitored.
             </p>
             <NotOfficialNotice class="w-full max-w-md text-left" />

@@ -13,7 +13,7 @@ return [
     |
     */
 
-    'hash_key' => env('ELECTIONWATCH_HASH_KEY'),
+    'hash_key' => env('ELECTIONREPORT_HASH_KEY'),
 
     /*
     |--------------------------------------------------------------------------
@@ -26,7 +26,7 @@ return [
     |
     */
 
-    'mode' => env('ELECTIONWATCH_MODE', 'test'),
+    'mode' => env('ELECTIONREPORT_MODE', 'test'),
 
     /*
     |--------------------------------------------------------------------------
@@ -38,6 +38,6 @@ return [
     |
     */
 
-    'feedback_url' => env('ELECTIONWATCH_FEEDBACK_URL'),
+    'feedback_url' => env('ELECTIONREPORT_FEEDBACK_URL'),
 
 ];

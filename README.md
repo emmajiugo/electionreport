@@ -1,6 +1,10 @@
-# ElectionWatch
+<p align="center">
+  <img src="public/images/brand/electionreport-logo-wide.png" alt="ElectionReport" width="480">
+</p>
 
-ElectionWatch lets Nigerian voters report what happened at their polling unit on election day. A voter enters their VIN, picks their polling unit, and says whether the election held, whether they voted, and who they voted for.
+# ElectionReport
+
+ElectionReport lets Nigerian voters report what happened at their polling unit on election day. A voter enters their VIN, picks their polling unit, and says whether the election held, whether they voted, and who they voted for.
 
 ## Local setup
 
@@ -11,7 +15,7 @@ cp .env.example .env
 php artisan key:generate
 ```
 
-Set `ELECTIONWATCH_HASH_KEY` in `.env` to a long random string, for example the output of `openssl rand -hex 32`. The app uses it to hash VINs and IP addresses. Then create the database and start the app:
+Set `ELECTIONREPORT_HASH_KEY` in `.env` to a long random string, for example the output of `openssl rand -hex 32`. The app uses it to hash VINs and IP addresses. Then create the database and start the app:
 
 ```bash
 php artisan migrate --seed
@@ -42,8 +46,8 @@ The widget shows a "For testing only" banner with these keys. To try the failure
 ### Production keys
 
 1. Sign in to the [Cloudflare dashboard](https://dash.cloudflare.com/) and open **Turnstile**. A free Cloudflare account is enough, and the domain does not need to use Cloudflare DNS.
-2. Click **Add widget**. Name it `ElectionWatch`.
-3. Under **Hostnames**, add every domain the app is served from: `electionwatch.ng`, `www.electionwatch.ng`, and the `*.laravel.cloud` domain Laravel Cloud gives your environment. The widget refuses to load on any hostname not in this list.
+2. Click **Add widget**. Name it `ElectionReport`.
+3. Under **Hostnames**, add every domain the app is served from: `electionreport.ng`, `www.electionreport.ng`, and the `*.laravel.cloud` domain Laravel Cloud gives your environment. The widget refuses to load on any hostname not in this list.
 4. Set **Widget mode** to **Managed**. Cloudflare then shows a checkbox only to visitors it considers suspicious.
 5. Create the widget and copy the **Site Key** and **Secret Key**.
 

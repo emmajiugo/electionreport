@@ -40,7 +40,7 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'name' => config('app.name'),
             'mode' => AppMode::current()->value,
-            'feedbackUrl' => AppMode::current()->isTest() ? config('electionwatch.feedback_url') : null,
+            'feedbackUrl' => AppMode::current()->isTest() ? config('electionreport.feedback_url') : null,
             'auth' => [
                 'user' => $request->user(),
             ],

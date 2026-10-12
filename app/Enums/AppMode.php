@@ -13,7 +13,7 @@ enum AppMode: string
      */
     public static function current(): self
     {
-        return config('electionwatch.mode') === self::Live->value ? self::Live : self::Test;
+        return config('electionreport.mode') === self::Live->value ? self::Live : self::Test;
     }
 
     public function isTest(): bool

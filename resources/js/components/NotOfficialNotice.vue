@@ -20,7 +20,7 @@
                 These are not official INEC results
             </h2>
             <p>
-                ElectionWatch shows what voters tell us happened at their own
+                ElectionReport shows what voters tell us happened at their own
                 polling units and who they say they voted for. INEC has not
                 checked these reports, and they are not the declared result.
             </p>

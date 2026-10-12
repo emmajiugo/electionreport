@@ -26,9 +26,9 @@
         <env name="DB_CONNECTION" value="sqlite"/>
         <env name="DB_DATABASE" value=":memory:"/>
         <env name="DB_URL" value=""/>
-        <env name="ELECTIONWATCH_HASH_KEY" value="testing-hash-key"/>
-        <env name="ELECTIONWATCH_MODE" value="live"/>
-        <env name="ELECTIONWATCH_FEEDBACK_URL" value=""/>
+        <env name="ELECTIONREPORT_HASH_KEY" value="testing-hash-key"/>
+        <env name="ELECTIONREPORT_MODE" value="live"/>
+        <env name="ELECTIONREPORT_FEEDBACK_URL" value=""/>
         <env name="TURNSTILE_SITE_KEY" value="1x00000000000000000000AA"/>
         <env name="TURNSTILE_SECRET_KEY" value="1x0000000000000000000000000000000AA"/>
         <env name="MAIL_MAILER" value="array"/>

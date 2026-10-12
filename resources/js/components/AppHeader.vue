@@ -43,7 +43,7 @@ const isTestMode = computed(() => page.props.mode === 'test');
                     ><span class="text-gray-800 dark:text-gray-100"
                         >Election</span
                     ><span class="text-green-700 dark:text-green-400"
-                        >Watch</span
+                        >Report</span
                     ></span
                 >
             </span>

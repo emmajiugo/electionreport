@@ -25,7 +25,7 @@ beforeEach(function () {
 
 function useMode(string $mode): void
 {
-    config(['electionwatch.mode' => $mode]);
+    config(['electionreport.mode' => $mode]);
 }
 
 function submitReportAs(string $vin): void
@@ -83,7 +83,7 @@ test('the dashboard shows only the data for the current mode', function () {
 
 test('pages know whether the app is in test mode', function (string $configured, string $shared) {
     useMode($configured);
-    config(['electionwatch.feedback_url' => 'https://forms.example/feedback']);
+    config(['electionreport.feedback_url' => 'https://forms.example/feedback']);
 
     $this->get(route('home'))->assertInertia(fn (Assert $page) => $page
         ->where('mode', $shared)

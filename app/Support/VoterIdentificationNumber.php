@@ -47,10 +47,10 @@ final readonly class VoterIdentificationNumber
      */
     public static function hmac(string $value): string
     {
-        $key = config('electionwatch.hash_key');
+        $key = config('electionreport.hash_key');
 
         if (! is_string($key) || $key === '') {
-            throw new RuntimeException('ELECTIONWATCH_HASH_KEY must be set.');
+            throw new RuntimeException('ELECTIONREPORT_HASH_KEY must be set.');
         }
 
         return hash_hmac('sha256', $value, $key);

@@ -1,6 +1,6 @@
 # Deploying to Laravel Cloud
 
-This guide covers the first deployment of ElectionWatch to [Laravel Cloud](https://cloud.laravel.com/), the settings the app depends on, and how to prepare for election-day traffic. Facts about Laravel Cloud come from its [documentation](https://laravel.com/cloud/docs/llms.txt), checked in September 2026. Plans and sizes change, so confirm limits in the dashboard before you rely on them.
+This guide covers the first deployment of ElectionReport to [Laravel Cloud](https://cloud.laravel.com/), the settings the app depends on, and how to prepare for election-day traffic. Facts about Laravel Cloud come from its [documentation](https://laravel.com/cloud/docs/llms.txt), checked in September 2026. Plans and sizes change, so confirm limits in the dashboard before you rely on them.
 
 ## What the app needs
 
@@ -25,7 +25,7 @@ This guide covers the first deployment of ElectionWatch to [Laravel Cloud](https
     openssl rand -hex 32
     ```
 
-    The app uses `ELECTIONWATCH_HASH_KEY` to hash every VIN and IP address. If the key changes or is lost, the app can no longer recognise VINs that already reported, and every voter could report again. Never rotate it during an election.
+    The app uses `ELECTIONREPORT_HASH_KEY` to hash every VIN and IP address. If the key changes or is lost, the app can no longer recognise VINs that already reported, and every voter could report again. Never rotate it during an election.
 
 3. **Create a Turnstile widget** for your domains. See [Cloudflare Turnstile](README.md#cloudflare-turnstile) in the README.
 4. **Run the test suite against Postgres at least once.** CI and local tests use SQLite. The dashboard's raw SQL is written to be portable, but confirm it on the real engine before election day.
@@ -71,13 +71,13 @@ Edit the environment's App cluster, turn on **Use Inertia SSR**, save, and deplo
 Set these on each environment. Variables you set override the ones Laravel Cloud injects.
 
 ```dotenv
-APP_NAME=ElectionWatch
+APP_NAME=ElectionReport
 APP_ENV=production
 APP_DEBUG=false
-APP_URL=https://electionwatch.ng
+APP_URL=https://electionreport.ng
 
-ELECTIONWATCH_MODE=test
-ELECTIONWATCH_FEEDBACK_URL=https://forms.example.com/electionwatch-feedback
+ELECTIONREPORT_MODE=test
+ELECTIONREPORT_FEEDBACK_URL=https://forms.example.com/electionreport-feedback
 
 CACHE_STORE=redis
 SESSION_DRIVER=redis
@@ -95,7 +95,7 @@ Check that `APP_KEY` is set on each environment. If it is missing, generate one 
 
 Store the two values that must never leak in **Secrets Manager**, then attach them to each environment:
 
-- `ELECTIONWATCH_HASH_KEY`
+- `ELECTIONREPORT_HASH_KEY`
 - `TURNSTILE_SECRET_KEY`
 
 Secret values cannot be read back after creation, which is why the hash key needs a copy in your password manager as well.
@@ -129,16 +129,16 @@ Redeploy after any change to variables, secrets or attached resources. Changes s
 
 ## Public testing before the election
 
-`ELECTIONWATCH_MODE` decides whether the site is a practice run or the real thing.
+`ELECTIONREPORT_MODE` decides whether the site is a practice run or the real thing.
 
-- `test` shows a TEST badge beside the logo and a banner on every page saying the data is practice data. Reports go to the `test_reports` table, and the results page shows only those. If `ELECTIONWATCH_FEEDBACK_URL` is set, the banner links to it so testers can send feedback.
+- `test` shows a TEST badge beside the logo and a banner on every page saying the data is practice data. Reports go to the `test_reports` table, and the results page shows only those. If `ELECTIONREPORT_FEEDBACK_URL` is set, the banner links to it so testers can send feedback.
 - `live` hides the badge and banner, saves reports to the `reports` table, and shows only live results.
 
 Any value other than `live`, including a typo or a missing variable, counts as `test`. A mistake then shows a visible TEST badge instead of mixing practice reports into the real count.
 
 Test and live reports are separate for duplicate checks too. A VIN used while testing can still report once the site goes live.
 
-To switch production to live, set `ELECTIONWATCH_MODE=live` and redeploy. The results cache is keyed by mode, so the dashboard changes over straight away. Test reports stay in `test_reports` until you remove them:
+To switch production to live, set `ELECTIONREPORT_MODE=live` and redeploy. The results cache is keyed by mode, so the dashboard changes over straight away. Test reports stay in `test_reports` until you remove them:
 
 ```bash
 php artisan tinker --execute 'DB::table("test_reports")->truncate();'
@@ -157,7 +157,7 @@ If the laptop is also blocked, the app sees the edge address instead of the visi
 
 ## Custom domain
 
-1. In the production environment's network settings, click **Add domain** and add `electionwatch.ng`. Choose to redirect `www.electionwatch.ng` to it.
+1. In the production environment's network settings, click **Add domain** and add `electionreport.ng`. Choose to redirect `www.electionreport.ng` to it.
 2. Add the DNS records Laravel Cloud shows: an A record (or a CNAME if the domain uses Cloudflare DNS), a `_cf-custom-hostname` TXT record for ownership, and an `_acme-challenge` record for the certificate. Most domains connect within 15 minutes, and Laravel Cloud issues the certificate automatically.
 3. Add both hostnames to the Turnstile widget, and set `APP_URL` to the custom domain. Redeploy.
 
@@ -189,7 +189,7 @@ Run a load test against staging at least a week before the election, with the sa
 
 A week before:
 
-- Set `ELECTIONWATCH_MODE=live` on production.
+- Set `ELECTIONREPORT_MODE=live` on production.
 - Raise the production replica minimum and the Postgres compute range to election-day levels, and redeploy.
 - Check that the TEST badge is gone and that `/results` shows no reports.
 - Confirm the `trustProxies` check above passed on the current release.
@@ -212,7 +212,7 @@ Afterwards:
 Laravel Cloud's CLI can do most of this from a terminal. It is not a project dependency. Install it globally with `composer global require laravel/cloud-cli`, sign in with `cloud auth`, and check each command's options with `cloud <command> -h`.
 
 ```bash
-cloud deploy electionwatch production -n       # deploy
+cloud deploy electionreport production -n       # deploy
 cloud deploy:monitor -n                        # follow the deployment
 cloud command:run production --cmd='php artisan db:seed --force' -n
 cloud tinker production --code='echo App\Models\Report::count();' -n
