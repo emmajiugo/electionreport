@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Link, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
-import { feedback } from '@/routes';
+import { feedback, home } from '@/routes';
 
 defineProps<{
     electionName?: string;
@@ -38,7 +38,7 @@ const isTestMode = computed(() => page.props.mode === 'test');
                     <path d="M15 18l-6-6 6-6" />
                 </svg>
             </button>
-            <span class="flex items-center gap-2 font-semibold">
+            <Link :href="home()" class="flex items-center gap-2 font-semibold">
                 <img src="/favicon.svg" alt="" class="size-7" />
                 <span
                     ><span class="text-gray-800 dark:text-gray-100"
@@ -47,7 +47,7 @@ const isTestMode = computed(() => page.props.mode === 'test');
                         >Report</span
                     ></span
                 >
-            </span>
+            </Link>
             <span
                 v-if="isTestMode"
                 class="rounded bg-amber-400 px-1.5 py-0.5 text-xs font-bold tracking-wide text-amber-950"
