@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { usePage } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
+import { feedback } from '@/routes';
 
 defineProps<{
     electionName?: string;
@@ -67,13 +68,13 @@ const isTestMode = computed(() => page.props.mode === 'test');
         >
             This is a test version. Reports and results here are practice data
             and do not count in the election.
-            <a
-                v-if="page.props.feedbackUrl"
-                :href="page.props.feedbackUrl"
-                target="_blank"
-                rel="noopener"
+            <Link
+                v-if="
+                    page.props.feedbackUrl && page.component !== 'Feedback/Show'
+                "
+                :href="feedback()"
                 class="font-semibold underline"
-                >Send feedback</a
+                >Send feedback</Link
             >
         </div>
     </div>

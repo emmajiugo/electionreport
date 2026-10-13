@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ResultsController;
@@ -11,6 +12,7 @@ Route::get('/', [VinController::class, 'create'])->name('home');
 Route::post('/vin', [VinController::class, 'store'])->middleware('throttle:vin')->name('vin.store');
 Route::get('/results', [ResultsController::class, 'index'])->name('results');
 Route::get('/reports/submitted', [ReportController::class, 'submitted'])->name('reports.submitted');
+Route::get('/feedback', [FeedbackController::class, 'show'])->name('feedback');
 
 Route::middleware(EnsureVinEntered::class)->group(function () {
     Route::get('/report', [ReportController::class, 'create'])->name('reports.create');

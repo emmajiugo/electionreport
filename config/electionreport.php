@@ -33,8 +33,8 @@ return [
     | Feedback URL
     |--------------------------------------------------------------------------
     |
-    | Where testers send feedback, such as a form or a WhatsApp link. Shown in
-    | the test mode banner when set.
+    | The form testers fill in, such as a Tally form. It is embedded on the
+    | feedback page, which the test mode banner links to when this is set.
     |
     */
 
