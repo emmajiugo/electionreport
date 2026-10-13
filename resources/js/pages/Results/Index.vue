@@ -3,6 +3,7 @@ import { Head, Link, router, usePoll } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import AppHeader from '@/components/AppHeader.vue';
 import NotOfficialNotice from '@/components/NotOfficialNotice.vue';
+import SelectChevron from '@/components/SelectChevron.vue';
 import BarList from '@/components/results/BarList.vue';
 import StatTile from '@/components/results/StatTile.vue';
 import StateMap from '@/components/results/StateMap.vue';
@@ -126,27 +127,30 @@ function selectFromMap(state: AreaResult): void {
 
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
                 <label for="scope" class="sr-only">Area</label>
-                <select
-                    id="scope"
-                    :value="selectedState?.id ?? ''"
-                    class="h-12 w-full rounded-xl border border-gray-300 bg-white px-3 text-base sm:w-64 dark:border-gray-700 dark:bg-gray-900"
-                    @change="
-                        scopeTo(
-                            Number(
-                                ($event.target as HTMLSelectElement).value,
-                            ) || null,
-                        )
-                    "
-                >
-                    <option value="">All of Nigeria</option>
-                    <option
-                        v-for="state in results.states"
-                        :key="state.id"
-                        :value="state.id"
+                <div class="relative w-full sm:w-64">
+                    <select
+                        id="scope"
+                        :value="selectedState?.id ?? ''"
+                        class="h-12 w-full appearance-none rounded-xl border border-gray-300 bg-white pr-10 pl-3 text-base dark:border-gray-700 dark:bg-gray-900"
+                        @change="
+                            scopeTo(
+                                Number(
+                                    ($event.target as HTMLSelectElement).value,
+                                ) || null,
+                            )
+                        "
                     >
-                        {{ state.name }}
-                    </option>
-                </select>
+                        <option value="">All of Nigeria</option>
+                        <option
+                            v-for="state in results.states"
+                            :key="state.id"
+                            :value="state.id"
+                        >
+                            {{ state.name }}
+                        </option>
+                    </select>
+                    <SelectChevron />
+                </div>
                 <Link
                     :href="home()"
                     class="flex h-12 items-center justify-center rounded-xl border border-green-700 bg-green-700 px-4 font-semibold text-white sm:ml-auto"

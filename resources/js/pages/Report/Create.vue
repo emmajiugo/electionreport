@@ -4,6 +4,7 @@ import { computed, ref, watch } from 'vue';
 import AppHeader from '@/components/AppHeader.vue';
 import PartyLogo from '@/components/PartyLogo.vue';
 import ReasonPicker from '@/components/ReasonPicker.vue';
+import SelectChevron from '@/components/SelectChevron.vue';
 import { home } from '@/routes';
 import { lgas, pollingUnits, wards } from '@/routes/locations';
 import { store } from '@/routes/reports';
@@ -234,8 +235,9 @@ const title = computed(() => {
     }
 });
 
-const selectClass =
+const fieldClass =
     'w-full rounded-xl border border-gray-300 bg-white p-3 text-base disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900';
+const selectClass = `${fieldClass} appearance-none pr-10`;
 </script>
 
 <template>
@@ -293,52 +295,65 @@ const selectClass =
             <div v-if="step === 'location'" class="flex flex-col gap-4">
                 <div class="flex flex-col gap-2">
                     <label for="state" class="text-sm font-medium">State</label>
-                    <select id="state" v-model="stateId" :class="selectClass">
-                        <option :value="null" disabled>Select state</option>
-                        <option
-                            v-for="state in props.states"
-                            :key="state.id"
-                            :value="state.id"
+                    <div class="relative">
+                        <select
+                            id="state"
+                            v-model="stateId"
+                            :class="selectClass"
                         >
-                            {{ state.name }}
-                        </option>
-                    </select>
+                            <option :value="null" disabled>Select state</option>
+                            <option
+                                v-for="state in props.states"
+                                :key="state.id"
+                                :value="state.id"
+                            >
+                                {{ state.name }}
+                            </option>
+                        </select>
+                        <SelectChevron />
+                    </div>
                 </div>
                 <div class="flex flex-col gap-2">
                     <label for="lga" class="text-sm font-medium">LGA</label>
-                    <select
-                        id="lga"
-                        v-model="lgaId"
-                        :disabled="!lgaOptions.length"
-                        :class="selectClass"
-                    >
-                        <option :value="null" disabled>Select LGA</option>
-                        <option
-                            v-for="lga in lgaOptions"
-                            :key="lga.id"
-                            :value="lga.id"
+                    <div class="relative">
+                        <select
+                            id="lga"
+                            v-model="lgaId"
+                            :disabled="!lgaOptions.length"
+                            :class="selectClass"
                         >
-                            {{ lga.name }}
-                        </option>
-                    </select>
+                            <option :value="null" disabled>Select LGA</option>
+                            <option
+                                v-for="lga in lgaOptions"
+                                :key="lga.id"
+                                :value="lga.id"
+                            >
+                                {{ lga.name }}
+                            </option>
+                        </select>
+                        <SelectChevron />
+                    </div>
                 </div>
                 <div class="flex flex-col gap-2">
                     <label for="ward" class="text-sm font-medium">Ward</label>
-                    <select
-                        id="ward"
-                        v-model="wardId"
-                        :disabled="!wardOptions.length"
-                        :class="selectClass"
-                    >
-                        <option :value="null" disabled>Select ward</option>
-                        <option
-                            v-for="ward in wardOptions"
-                            :key="ward.id"
-                            :value="ward.id"
+                    <div class="relative">
+                        <select
+                            id="ward"
+                            v-model="wardId"
+                            :disabled="!wardOptions.length"
+                            :class="selectClass"
                         >
-                            {{ ward.name }}
-                        </option>
-                    </select>
+                            <option :value="null" disabled>Select ward</option>
+                            <option
+                                v-for="ward in wardOptions"
+                                :key="ward.id"
+                                :value="ward.id"
+                            >
+                                {{ ward.name }}
+                            </option>
+                        </select>
+                        <SelectChevron />
+                    </div>
                 </div>
                 <div class="flex flex-col gap-2">
                     <label for="polling-unit" class="text-sm font-medium">
@@ -350,29 +365,33 @@ const selectClass =
                         type="search"
                         aria-label="Search polling units"
                         :placeholder="`Search ${pollingUnitOptions.length} polling units`"
-                        :class="selectClass"
+                        :class="fieldClass"
                     />
-                    <select
-                        id="polling-unit"
-                        v-model="form.polling_unit_id"
-                        :disabled="!pollingUnitOptions.length"
-                        :class="selectClass"
-                    >
-                        <option :value="null" disabled>
-                            {{
-                                pollingUnitQuery && !filteredPollingUnits.length
-                                    ? 'No polling units match your search'
-                                    : `Select polling unit${pollingUnitQuery ? ` (${filteredPollingUnits.length} found)` : ''}`
-                            }}
-                        </option>
-                        <option
-                            v-for="unit in filteredPollingUnits"
-                            :key="unit.id"
-                            :value="unit.id"
+                    <div class="relative">
+                        <select
+                            id="polling-unit"
+                            v-model="form.polling_unit_id"
+                            :disabled="!pollingUnitOptions.length"
+                            :class="selectClass"
                         >
-                            {{ unit.name }}
-                        </option>
-                    </select>
+                            <option :value="null" disabled>
+                                {{
+                                    pollingUnitQuery &&
+                                    !filteredPollingUnits.length
+                                        ? 'No polling units match your search'
+                                        : `Select polling unit${pollingUnitQuery ? ` (${filteredPollingUnits.length} found)` : ''}`
+                                }}
+                            </option>
+                            <option
+                                v-for="unit in filteredPollingUnits"
+                                :key="unit.id"
+                                :value="unit.id"
+                            >
+                                {{ unit.name }}
+                            </option>
+                        </select>
+                        <SelectChevron />
+                    </div>
                 </div>
                 <p v-if="loadingLocations" class="text-sm text-gray-500">
                     Loading…
