@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { onBeforeUnmount, ref } from 'vue';
+import { ref } from 'vue';
 import AppHeader from '@/components/AppHeader.vue';
-import { shrinkPhoto } from '@/lib/photo';
+import ResultSheetPicker from '@/components/ResultSheetPicker.vue';
 import { home, results } from '@/routes';
 import { store } from '@/routes/result-sheets';
 import type { Election, PollingUnitDetails, ResultSheet } from '@/types';
@@ -19,54 +19,13 @@ const form = useForm({
     result_sheet: null as File | null,
 });
 
-const previewUrl = ref<string | null>(null);
 const preparing = ref(false);
-const photoError = ref<string | null>(null);
-
-function setPreview(file: File | null): void {
-    if (previewUrl.value) {
-        URL.revokeObjectURL(previewUrl.value);
-    }
-
-    previewUrl.value = file ? URL.createObjectURL(file) : null;
-}
-
-async function choosePhoto(event: Event): Promise<void> {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    input.value = '';
-
-    if (!file) {
-        return;
-    }
-
-    preparing.value = true;
-    photoError.value = null;
-    form.clearErrors();
-
-    try {
-        form.result_sheet = await shrinkPhoto(file);
-        setPreview(form.result_sheet);
-    } catch {
-        form.result_sheet = null;
-        setPreview(null);
-        photoError.value =
-            'We could not open this photo. Try taking it again, or choose a JPG or PNG.';
-    } finally {
-        preparing.value = false;
-    }
-}
 
 function upload(): void {
     form.post(store.url(), {
-        onSuccess: () => {
-            form.reset();
-            setPreview(null);
-        },
+        onSuccess: () => form.reset(),
     });
 }
-
-onBeforeUnmount(() => setPreview(null));
 
 const timeFormat = new Intl.DateTimeFormat('en-NG', {
     hour: 'numeric',
@@ -130,38 +89,13 @@ function uploadedAt(sheet: ResultSheet): string {
                     it is safe to do so.
                 </p>
 
-                <img
-                    v-if="previewUrl"
-                    :src="previewUrl"
-                    alt="Your photo of the result sheet"
-                    class="w-full rounded-xl border border-gray-200 dark:border-gray-800"
+                <ResultSheetPicker
+                    v-model:photo="form.result_sheet"
+                    v-model:preparing="preparing"
+                    :error="form.errors.result_sheet"
+                    :disabled="form.processing"
+                    @chosen="form.clearErrors()"
                 />
-
-                <label
-                    class="cursor-pointer rounded-xl border-2 border-dashed border-gray-300 bg-white p-4 text-center font-medium text-green-700 dark:border-gray-700 dark:bg-gray-900 dark:text-green-400"
-                >
-                    {{
-                        preparing
-                            ? 'Preparing photo…'
-                            : previewUrl
-                              ? 'Choose a different photo'
-                              : 'Take or choose a photo'
-                    }}
-                    <input
-                        type="file"
-                        accept="image/*"
-                        class="sr-only"
-                        :disabled="preparing || form.processing"
-                        @change="choosePhoto"
-                    />
-                </label>
-
-                <p
-                    v-if="photoError || form.errors.result_sheet"
-                    class="rounded-xl bg-red-50 p-3 text-sm text-red-700"
-                >
-                    {{ photoError ?? form.errors.result_sheet }}
-                </p>
 
                 <progress
                     v-if="form.progress"

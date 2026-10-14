@@ -6,6 +6,7 @@ use App\Enums\ElectionNotHeldReason;
 use App\Enums\NotVotedReason;
 use App\Http\Middleware\EnsureVinEntered;
 use App\Models\Election;
+use App\Support\ResultSheetImage;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -53,6 +54,7 @@ class StoreReportRequest extends FormRequest
                 'string',
                 'max:500',
             ],
+            'result_sheet' => $electionHeld ? ['nullable', ResultSheetImage::rule()] : ['prohibited'],
             // Honeypot: invisible to people, bots tend to fill every field.
             'website' => ['prohibited'],
         ];
@@ -66,6 +68,7 @@ class StoreReportRequest extends FormRequest
         return [
             'party_id.exists' => 'Select one of the parties on the ballot.',
             'reason_details.required' => 'Tell us what happened.',
+            ...ResultSheetImage::messages('result_sheet'),
         ];
     }
 

@@ -2,8 +2,14 @@
 
 namespace App\Support;
 
+use App\Enums\AppMode;
+use App\Models\ResultSheet;
 use GdImage;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\File;
 use RuntimeException;
 
 /**
@@ -13,6 +19,10 @@ use RuntimeException;
 final readonly class ResultSheetImage
 {
     private const int JPEG_QUALITY = 82;
+
+    private const int MAX_KILOBYTES = 2048;
+
+    private const int MAX_PIXELS_PER_SIDE = 2000;
 
     private function __construct(public string $jpeg, public string $hash) {}
 
@@ -31,6 +41,44 @@ final readonly class ResultSheetImage
         $jpeg = (string) ob_get_clean();
 
         return new self($jpeg, self::differenceHash($image));
+    }
+
+    /**
+     * The browser shrinks photos to about 1600px before upload; these limits leave headroom while
+     * keeping a hostile upload from exhausting memory when it is decoded.
+     */
+    public static function rule(): File
+    {
+        return File::image()
+            ->types(['jpg', 'jpeg', 'png', 'webp'])
+            ->max(self::MAX_KILOBYTES)
+            ->dimensions(Rule::dimensions()->maxWidth(self::MAX_PIXELS_PER_SIDE)->maxHeight(self::MAX_PIXELS_PER_SIDE));
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function messages(string $attribute): array
+    {
+        return [
+            "{$attribute}.image" => 'Upload a photo of the result sheet.',
+            "{$attribute}.mimes" => 'Upload a photo of the result sheet.',
+            "{$attribute}.max" => 'This photo is too large. Please try again.',
+            "{$attribute}.dimensions" => 'This photo is too large. Please try again.',
+        ];
+    }
+
+    /**
+     * Saves the photo publicly and returns its path. Test-mode photos get their own prefix so they
+     * can be cleared without touching the real election's.
+     */
+    public function store(int $electionId): string
+    {
+        $path = AppMode::current()->value."/result-sheets/{$electionId}/".Str::uuid().'.jpg';
+
+        Storage::disk(ResultSheet::disk())->put($path, $this->jpeg, 'public');
+
+        return $path;
     }
 
     /**

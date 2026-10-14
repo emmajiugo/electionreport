@@ -8,11 +8,15 @@ use App\Http\Middleware\EnsureVinEntered;
 use App\Http\Requests\StoreReportRequest;
 use App\Models\Election;
 use App\Models\Party;
+use App\Models\ResultSheet;
 use App\Models\State;
+use App\Support\ResultSheetImage;
 use App\Support\VoterIdentificationNumber;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -49,22 +53,41 @@ class ReportController extends Controller
     {
         /** @var Election $election */
         $election = $request->election();
+        $ipHash = VoterIdentificationNumber::hmac((string) $request->ip());
+        $image = $request->hasFile('result_sheet') ? ResultSheetImage::fromUpload($request->file('result_sheet')) : null;
+        $path = $image?->store($election->id);
 
         try {
-            $election->reports()->create([
-                'polling_unit_id' => $request->integer('polling_unit_id'),
-                'vin_hash' => $request->vinHash(),
-                'vin_masked' => $request->maskedVin(),
-                'election_held' => $request->boolean('election_held'),
-                'not_held_reason' => $request->input('not_held_reason'),
-                'voted' => $request->boolean('election_held') ? $request->boolean('voted') : null,
-                'not_voted_reason' => $request->input('not_voted_reason'),
-                'party_id' => $request->input('party_id'),
-                'reason_details' => $request->input('reason_details'),
-                'ip_hash' => VoterIdentificationNumber::hmac((string) $request->ip()),
-                'user_agent' => substr((string) $request->userAgent(), 0, 512) ?: null,
-            ]);
+            DB::transaction(function () use ($request, $election, $ipHash, $image, $path): void {
+                $report = $election->reports()->create([
+                    'polling_unit_id' => $request->integer('polling_unit_id'),
+                    'vin_hash' => $request->vinHash(),
+                    'vin_masked' => $request->maskedVin(),
+                    'election_held' => $request->boolean('election_held'),
+                    'not_held_reason' => $request->input('not_held_reason'),
+                    'voted' => $request->boolean('election_held') ? $request->boolean('voted') : null,
+                    'not_voted_reason' => $request->input('not_voted_reason'),
+                    'party_id' => $request->input('party_id'),
+                    'reason_details' => $request->input('reason_details'),
+                    'ip_hash' => $ipHash,
+                    'user_agent' => substr((string) $request->userAgent(), 0, 512) ?: null,
+                ]);
+
+                if ($image !== null && $path !== null) {
+                    $report->resultSheet()->create([
+                        'election_id' => $election->id,
+                        'polling_unit_id' => $report->polling_unit_id,
+                        'path' => $path,
+                        'image_hash' => $image->hash,
+                        'ip_hash' => $ipHash,
+                    ]);
+                }
+            });
         } catch (UniqueConstraintViolationException) {
+            if ($path !== null) {
+                Storage::disk(ResultSheet::disk())->delete($path);
+            }
+
             // Two submissions for the same VIN raced past the validator's duplicate check.
             throw ValidationException::withMessages(['vin' => Election::duplicateVinMessage()]);
         }
@@ -85,8 +108,12 @@ class ReportController extends Controller
             return to_route('home');
         }
 
+        $report = $request->session()->has(EnsureVinEntered::SESSION_KEY)
+            ? Election::current()?->reportFrom($request->session()->get(EnsureVinEntered::SESSION_KEY.'.hash'))
+            : null;
+
         return Inertia::render('Report/Submitted', [
-            'canAddResultSheet' => $request->session()->has(EnsureVinEntered::SESSION_KEY),
+            'canAddResultSheet' => $report !== null && $report->resultSheet()->doesntExist(),
         ]);
     }
 }

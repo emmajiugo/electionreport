@@ -5,22 +5,13 @@ namespace App\Http\Requests;
 use App\Http\Middleware\EnsureVinEntered;
 use App\Models\Election;
 use App\Models\Report;
+use App\Support\ResultSheetImage;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\File;
 use Illuminate\Validation\Validator;
 
 class StoreResultSheetRequest extends FormRequest
 {
-    /**
-     * The browser shrinks photos to about 1600px before upload; these limits leave headroom while
-     * keeping a hostile upload from exhausting memory when it is decoded.
-     */
-    private const int MAX_KILOBYTES = 2048;
-
-    private const int MAX_PIXELS_PER_SIDE = 2000;
-
     private ?Report $report = null;
 
     /**
@@ -39,13 +30,7 @@ class StoreResultSheetRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'result_sheet' => [
-                'required',
-                File::image()
-                    ->types(['jpg', 'jpeg', 'png', 'webp'])
-                    ->max(self::MAX_KILOBYTES)
-                    ->dimensions(Rule::dimensions()->maxWidth(self::MAX_PIXELS_PER_SIDE)->maxHeight(self::MAX_PIXELS_PER_SIDE)),
-            ],
+            'result_sheet' => ['required', ResultSheetImage::rule()],
         ];
     }
 
@@ -56,10 +41,7 @@ class StoreResultSheetRequest extends FormRequest
     {
         return [
             'result_sheet.required' => 'Take or choose a photo of the result sheet.',
-            'result_sheet.image' => 'Upload a photo of the result sheet.',
-            'result_sheet.mimes' => 'Upload a photo of the result sheet.',
-            'result_sheet.max' => 'This photo is too large. Please try again.',
-            'result_sheet.dimensions' => 'This photo is too large. Please try again.',
+            ...ResultSheetImage::messages('result_sheet'),
         ];
     }
 

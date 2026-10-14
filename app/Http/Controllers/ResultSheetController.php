@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\AppMode;
 use App\Http\Middleware\EnsureVinEntered;
 use App\Http\Requests\StoreResultSheetRequest;
 use App\Models\Election;
@@ -14,7 +13,6 @@ use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -66,10 +64,7 @@ class ResultSheetController extends Controller
         /** @var Report $report */
         $report = $request->report();
         $image = ResultSheetImage::fromUpload($request->file('result_sheet'));
-
-        // Test-mode photos get their own prefix so they can be cleared without touching the real election's.
-        $path = AppMode::current()->value."/result-sheets/{$report->election_id}/".Str::uuid().'.jpg';
-        Storage::disk(ResultSheet::disk())->put($path, $image->jpeg, 'public');
+        $path = $image->store($report->election_id);
 
         try {
             $report->resultSheet()->create([

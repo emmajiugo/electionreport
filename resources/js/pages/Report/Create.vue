@@ -4,6 +4,7 @@ import { computed, ref, watch } from 'vue';
 import AppHeader from '@/components/AppHeader.vue';
 import PartyLogo from '@/components/PartyLogo.vue';
 import ReasonPicker from '@/components/ReasonPicker.vue';
+import ResultSheetPicker from '@/components/ResultSheetPicker.vue';
 import SelectChevron from '@/components/SelectChevron.vue';
 import { home } from '@/routes';
 import { lgas, pollingUnits, wards } from '@/routes/locations';
@@ -25,7 +26,8 @@ type Step =
     | 'notHeldReason'
     | 'voted'
     | 'notVotedReason'
-    | 'party';
+    | 'party'
+    | 'resultSheet';
 
 const step = ref<Step>('location');
 const history = ref<Step[]>([]);
@@ -38,8 +40,11 @@ const form = useForm({
     not_voted_reason: null as string | null,
     party_id: null as number | null,
     reason_details: '',
+    result_sheet: null as File | null,
     website: '',
 });
+
+const preparingPhoto = ref(false);
 
 const stateId = ref<number | null>(null);
 const lgaId = ref<number | null>(null);
@@ -118,13 +123,15 @@ const canContinue = computed(() => {
             return hasReason(form.not_voted_reason);
         case 'party':
             return form.party_id !== null;
+        case 'resultSheet':
+            return !preparingPhoto.value;
         default:
             return false;
     }
 });
 
 const isFinalStep = computed(() =>
-    ['notHeldReason', 'notVotedReason', 'party'].includes(step.value),
+    ['notHeldReason', 'resultSheet'].includes(step.value),
 );
 
 function hasReason(reason: string | null): boolean {
@@ -165,6 +172,8 @@ function next(): void {
 
     if (step.value === 'location') {
         goTo('held');
+    } else if (step.value === 'notVotedReason' || step.value === 'party') {
+        goTo('resultSheet');
     } else if (isFinalStep.value) {
         submit();
     }
@@ -182,6 +191,7 @@ const stepForField: Record<string, Step> = {
     not_held_reason: 'notHeldReason',
     not_voted_reason: 'notVotedReason',
     party_id: 'party',
+    result_sheet: 'resultSheet',
 };
 
 function submit(): void {
@@ -198,6 +208,7 @@ function submit(): void {
         party_id: voted ? data.party_id : null,
         reason_details:
             !voted && reason === 'other' ? data.reason_details : null,
+        result_sheet: held ? data.result_sheet : null,
     })).post(store.url(), {
         onError: (errors) => {
             const field = Object.keys(errors).find(
@@ -230,6 +241,8 @@ const title = computed(() => {
             return 'Why were you unable to vote?';
         case 'party':
             return 'Which party did you vote for?';
+        case 'resultSheet':
+            return 'Is the result sheet posted?';
         default:
             return '';
     }
@@ -498,6 +511,22 @@ const selectClass = `${fieldClass} appearance-none pr-10`;
                 </p>
             </fieldset>
 
+            <div v-else-if="step === 'resultSheet'" class="flex flex-col gap-4">
+                <p class="text-gray-600 dark:text-gray-400">
+                    If the officials have posted the result sheet (Form EC8A),
+                    add a clear photo of the whole sheet. This is optional: you
+                    can submit now and come back later with your VIN. Only take
+                    the photo when it is safe to do so.
+                </p>
+                <ResultSheetPicker
+                    v-model:photo="form.result_sheet"
+                    v-model:preparing="preparingPhoto"
+                    :error="form.errors.result_sheet"
+                    :disabled="form.processing"
+                    @chosen="form.clearErrors('result_sheet')"
+                />
+            </div>
+
             <div class="absolute -left-[9999px]" aria-hidden="true">
                 <label for="website">Website</label>
                 <input
@@ -521,9 +550,11 @@ const selectClass = `${fieldClass} appearance-none pr-10`;
                     {{
                         form.processing
                             ? 'Submitting…'
-                            : isFinalStep
-                              ? 'Submit report'
-                              : 'Continue'
+                            : step === 'resultSheet' && !form.result_sheet
+                              ? 'Submit without a photo'
+                              : isFinalStep
+                                ? 'Submit report'
+                                : 'Continue'
                     }}
                 </button>
             </div>

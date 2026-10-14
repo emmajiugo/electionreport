@@ -7,7 +7,10 @@ use App\Models\Election;
 use App\Models\Party;
 use App\Models\PollingUnit;
 use App\Models\Report;
+use App\Models\ResultSheet;
 use App\Support\VoterIdentificationNumber;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -208,4 +211,46 @@ test('report submissions are rate limited per session, not per shared IP', funct
         ->assertRedirect(route('reports.submitted'));
 
     expect(Report::count())->toBe(11);
+});
+
+test('a voter can attach the result sheet to their report', function () {
+    Storage::fake('public');
+    enterVin();
+
+    $this->post(route('reports.store'), votedReport(['result_sheet' => UploadedFile::fake()->image('sheet.jpg', 800, 600)]))
+        ->assertRedirect(route('reports.submitted'));
+
+    $sheet = ResultSheet::sole();
+
+    expect($sheet->report_id)->toBe(Report::sole()->id)
+        ->and($sheet->polling_unit_id)->toBe($this->pollingUnit->id);
+    Storage::disk('public')->assertExists($sheet->path);
+
+    $this->get(route('reports.submitted'))->assertInertia(fn (Assert $page) => $page->where('canAddResultSheet', false));
+});
+
+test('a result sheet cannot be attached to a report that the election did not hold', function () {
+    Storage::fake('public');
+    enterVin();
+
+    $this->post(route('reports.store'), [
+        'polling_unit_id' => $this->pollingUnit->id,
+        'election_held' => false,
+        'not_held_reason' => ElectionNotHeldReason::OfficialsAbsent->value,
+        'result_sheet' => UploadedFile::fake()->image('sheet.jpg', 800, 600),
+    ])->assertSessionHasErrors('result_sheet');
+
+    expect(Report::count())->toBe(0)
+        ->and(Storage::disk('public')->allFiles())->toBe([]);
+});
+
+test('an unusable result sheet photo holds back the whole report', function () {
+    Storage::fake('public');
+    enterVin();
+
+    $this->post(route('reports.store'), votedReport(['result_sheet' => UploadedFile::fake()->image('sheet.jpg', 2001, 100)]))
+        ->assertSessionHasErrors(['result_sheet' => 'This photo is too large. Please try again.']);
+
+    expect(Report::count())->toBe(0)
+        ->and(ResultSheet::count())->toBe(0);
 });
