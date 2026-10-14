@@ -30,6 +30,17 @@ export type ResultSheet = {
     url: string;
     uploaded_at: string;
     is_yours: boolean;
+    confirmations: number;
+    disputes: number;
+    status: 'single_source' | 'partly_confirmed' | 'corroborated' | 'contested';
+    status_label: string;
+};
+
+export type ReviewVerdict = 'confirm' | 'dispute';
+
+export type ResultSheetReview = {
+    result_sheet_id: number;
+    verdict: ReviewVerdict;
 };
 
 export type Election = {

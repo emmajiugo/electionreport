@@ -5,6 +5,7 @@ use App\Http\Controllers\LocationController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ResultsController;
 use App\Http\Controllers\ResultSheetController;
+use App\Http\Controllers\ResultSheetReviewController;
 use App\Http\Controllers\VinController;
 use App\Http\Middleware\EnsureVinEntered;
 use Illuminate\Support\Facades\Route;
@@ -21,6 +22,7 @@ Route::middleware(EnsureVinEntered::class)->group(function () {
 
     Route::get('/result-sheet', [ResultSheetController::class, 'create'])->name('result-sheets.create');
     Route::post('/result-sheets', [ResultSheetController::class, 'store'])->middleware('throttle:result-sheets')->name('result-sheets.store');
+    Route::post('/result-sheets/{sheet}/reviews', [ResultSheetReviewController::class, 'store'])->middleware('throttle:result-sheets')->name('result-sheets.reviews.store');
 
     Route::middleware('throttle:locations')->prefix('locations')->name('locations.')->group(function () {
         Route::get('/states/{state}/lgas', [LocationController::class, 'lgas'])->name('lgas');

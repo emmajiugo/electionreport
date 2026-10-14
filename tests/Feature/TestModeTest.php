@@ -103,7 +103,7 @@ test('each test table matches its live table', function (string $live) {
         ->all();
 
     expect($columns("test_{$live}"))->toBe($columns($live));
-})->with(['reports', 'result_sheets']);
+})->with(['reports', 'result_sheets', 'result_sheet_reviews']);
 
 test('result sheets uploaded in test mode are kept apart from live ones', function () {
     Storage::fake('public');

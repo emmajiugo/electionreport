@@ -81,6 +81,14 @@ class Report extends Model
     }
 
     /**
+     * @return HasOne<ResultSheetReview, $this>
+     */
+    public function resultSheetReview(): HasOne
+    {
+        return $this->hasOne(ResultSheetReview::class);
+    }
+
+    /**
      * Test-mode reports live in their own table so they never mix with, or block VINs in, the real election.
      */
     public function getTable(): string

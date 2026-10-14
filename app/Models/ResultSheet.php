@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -21,6 +22,8 @@ use Illuminate\Support\Facades\Storage;
  * @property string $path
  * @property string $image_hash
  * @property string $ip_hash
+ * @property-read int $confirmations_count
+ * @property-read int $disputes_count
  */
 #[Fillable(['election_id', 'polling_unit_id', 'report_id', 'path', 'image_hash', 'ip_hash'])]
 #[Hidden(['ip_hash'])]
@@ -51,6 +54,14 @@ class ResultSheet extends Model
     public function report(): BelongsTo
     {
         return $this->belongsTo(Report::class);
+    }
+
+    /**
+     * @return HasMany<ResultSheetReview, $this>
+     */
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(ResultSheetReview::class);
     }
 
     public function url(): string

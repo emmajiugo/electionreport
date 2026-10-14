@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ResultSheetStatus;
+use App\Enums\ReviewVerdict;
 use App\Http\Middleware\EnsureVinEntered;
 use App\Http\Requests\StoreResultSheetRequest;
 use App\Models\Election;
@@ -9,6 +11,7 @@ use App\Models\Report;
 use App\Models\ResultSheet;
 use App\Support\ResultSheetImage;
 use App\Support\VoterIdentificationNumber;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -44,19 +47,51 @@ class ResultSheetController extends Controller
                 'lga' => $pollingUnit->ward->lga->name,
                 'state' => $pollingUnit->ward->lga->state->name,
             ],
-            'sheets' => ResultSheet::query()
-                ->where('election_id', $election->id)
-                ->where('polling_unit_id', $pollingUnit->id)
-                ->oldest()
-                ->get()
-                ->map(fn (ResultSheet $sheet): array => [
-                    'id' => $sheet->id,
-                    'url' => $sheet->url(),
-                    'uploaded_at' => $sheet->created_at?->toIso8601String(),
-                    'is_yours' => $sheet->report_id === $report->id,
-                ]),
+            'sheets' => $this->sheetsAt($report),
             'hasUploaded' => $report->resultSheet()->exists(),
+            'yourReview' => $report->resultSheetReview()->first()?->only('result_sheet_id', 'verdict'),
         ]);
+    }
+
+    /**
+     * The polling unit's sheets, best supported first, so a voter sees the leading sheet before any rival.
+     *
+     * @return array<int, array{id: int, url: string, uploaded_at: ?string, is_yours: bool, confirmations: int, disputes: int, status: string, status_label: string}>
+     */
+    private function sheetsAt(Report $report): array
+    {
+        $sheets = ResultSheet::query()
+            ->where('election_id', $report->election_id)
+            ->where('polling_unit_id', $report->polling_unit_id)
+            ->withCount([
+                'reviews as confirmations_count' => fn (Builder $query) => $query->where('verdict', ReviewVerdict::Confirm),
+                'reviews as disputes_count' => fn (Builder $query) => $query->where('verdict', ReviewVerdict::Dispute),
+            ])
+            ->get()
+            ->sortBy([['confirmations_count', 'desc'], ['id', 'asc']]);
+
+        $reachedThreshold = $sheets->filter(
+            fn (ResultSheet $sheet): bool => $sheet->confirmations_count >= ResultSheetStatus::CORROBORATION_THRESHOLD,
+        );
+
+        return $sheets->map(function (ResultSheet $sheet) use ($report, $reachedThreshold): array {
+            $status = ResultSheetStatus::fromReviews(
+                $sheet->confirmations_count,
+                $sheet->disputes_count,
+                $reachedThreshold->contains(fn (ResultSheet $rival): bool => $rival->id !== $sheet->id),
+            );
+
+            return [
+                'id' => $sheet->id,
+                'url' => $sheet->url(),
+                'uploaded_at' => $sheet->created_at?->toIso8601String(),
+                'is_yours' => $sheet->report_id === $report->id,
+                'confirmations' => $sheet->confirmations_count,
+                'disputes' => $sheet->disputes_count,
+                'status' => $status->value,
+                'status_label' => $status->label(),
+            ];
+        })->values()->all();
     }
 
     public function store(StoreResultSheetRequest $request): RedirectResponse

@@ -5,7 +5,14 @@ import AppHeader from '@/components/AppHeader.vue';
 import ResultSheetPicker from '@/components/ResultSheetPicker.vue';
 import { home, results } from '@/routes';
 import { store } from '@/routes/result-sheets';
-import type { Election, PollingUnitDetails, ResultSheet } from '@/types';
+import { store as storeReview } from '@/routes/result-sheets/reviews';
+import type {
+    Election,
+    PollingUnitDetails,
+    ResultSheet,
+    ResultSheetReview,
+    ReviewVerdict,
+} from '@/types';
 
 defineProps<{
     election: Election;
@@ -13,6 +20,7 @@ defineProps<{
     pollingUnit: PollingUnitDetails;
     sheets: ResultSheet[];
     hasUploaded: boolean;
+    yourReview: ResultSheetReview | null;
 }>();
 
 const form = useForm({
@@ -20,6 +28,26 @@ const form = useForm({
 });
 
 const preparing = ref(false);
+
+const reviewForm = useForm({
+    verdict: null as ReviewVerdict | null,
+});
+
+function review(sheet: ResultSheet, verdict: ReviewVerdict): void {
+    reviewForm.verdict = verdict;
+    reviewForm.post(storeReview.url(sheet.id), { preserveScroll: true });
+}
+
+const statusClass: Record<ResultSheet['status'], string> = {
+    single_source:
+        'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
+    partly_confirmed:
+        'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
+    corroborated:
+        'bg-green-50 text-green-800 dark:bg-green-950 dark:text-green-200',
+    contested:
+        'bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-200',
+};
 
 function upload(): void {
     form.post(store.url(), {
@@ -74,6 +102,90 @@ function uploadedAt(sheet: ResultSheet): string {
                 </p>
             </div>
 
+            <section v-if="sheets.length" class="flex flex-col gap-3">
+                <h2 class="font-semibold">
+                    {{
+                        yourReview || sheets.every((sheet) => sheet.is_yours)
+                            ? `Uploaded for this polling unit (${sheets.length})`
+                            : 'Does this match the sheet posted at your polling unit?'
+                    }}
+                </h2>
+
+                <p
+                    v-if="reviewForm.errors.verdict"
+                    class="rounded-xl bg-red-50 p-3 text-sm text-red-700"
+                >
+                    {{ reviewForm.errors.verdict }}
+                </p>
+
+                <article
+                    v-for="sheet in sheets"
+                    :key="sheet.id"
+                    class="overflow-hidden rounded-xl bg-white dark:bg-gray-900"
+                >
+                    <a :href="sheet.url" target="_blank" rel="noopener">
+                        <img
+                            :src="sheet.url"
+                            alt="Result sheet uploaded by a voter"
+                            loading="lazy"
+                            class="aspect-[3/4] w-full object-cover object-top"
+                        />
+                    </a>
+                    <div class="flex flex-col gap-3 p-4">
+                        <p
+                            class="flex justify-between text-sm text-gray-600 dark:text-gray-400"
+                        >
+                            <span>{{
+                                sheet.is_yours
+                                    ? 'Your upload'
+                                    : 'Uploaded by a voter'
+                            }}</span>
+                            <span>{{ uploadedAt(sheet) }}</span>
+                        </p>
+                        <p
+                            class="rounded-lg px-3 py-2 text-sm"
+                            :class="statusClass[sheet.status]"
+                        >
+                            {{ sheet.status_label }} ·
+                            {{ sheet.confirmations }} confirmed,
+                            {{ sheet.disputes }} disputed
+                        </p>
+
+                        <p
+                            v-if="yourReview?.result_sheet_id === sheet.id"
+                            class="text-sm font-medium"
+                        >
+                            {{
+                                yourReview.verdict === 'confirm'
+                                    ? 'You said this matches what you saw.'
+                                    : 'You said this does not match what you saw.'
+                            }}
+                        </p>
+                        <div
+                            v-else-if="!yourReview && !sheet.is_yours"
+                            class="grid grid-cols-2 gap-3"
+                        >
+                            <button
+                                type="button"
+                                class="rounded-xl bg-green-700 px-3 py-3 font-semibold text-white disabled:opacity-50"
+                                :disabled="reviewForm.processing"
+                                @click="review(sheet, 'confirm')"
+                            >
+                                It matches
+                            </button>
+                            <button
+                                type="button"
+                                class="rounded-xl border border-gray-300 bg-white px-3 py-3 font-semibold disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900"
+                                :disabled="reviewForm.processing"
+                                @click="review(sheet, 'dispute')"
+                            >
+                                It does not match
+                            </button>
+                        </div>
+                    </div>
+                </article>
+            </section>
+
             <p
                 v-if="hasUploaded"
                 class="rounded-xl bg-green-50 p-4 text-green-800 dark:bg-green-950 dark:text-green-200"
@@ -82,6 +194,13 @@ function uploadedAt(sheet: ResultSheet): string {
             </p>
 
             <form v-else class="flex flex-col gap-4" @submit.prevent="upload">
+                <h2 v-if="sheets.length" class="font-semibold">
+                    {{
+                        yourReview?.verdict === 'dispute'
+                            ? 'Have a photo of the correct sheet? Upload it.'
+                            : 'Upload your own photo'
+                    }}
+                </h2>
                 <p class="text-gray-600 dark:text-gray-400">
                     When counting ends, the officials post the result sheet
                     (Form EC8A) at the polling unit. Take a clear photo of the
@@ -114,37 +233,6 @@ function uploadedAt(sheet: ResultSheet): string {
                     {{ form.processing ? 'Uploading…' : 'Upload photo' }}
                 </button>
             </form>
-
-            <section v-if="sheets.length" class="flex flex-col gap-3">
-                <h2 class="font-semibold">
-                    Uploaded for this polling unit ({{ sheets.length }})
-                </h2>
-                <a
-                    v-for="sheet in sheets"
-                    :key="sheet.id"
-                    :href="sheet.url"
-                    target="_blank"
-                    rel="noopener"
-                    class="overflow-hidden rounded-xl bg-white dark:bg-gray-900"
-                >
-                    <img
-                        :src="sheet.url"
-                        alt="Result sheet uploaded by a voter"
-                        loading="lazy"
-                        class="aspect-[3/4] w-full object-cover object-top"
-                    />
-                    <p
-                        class="flex justify-between px-4 py-2 text-sm text-gray-600 dark:text-gray-400"
-                    >
-                        <span>{{
-                            sheet.is_yours
-                                ? 'Your upload'
-                                : 'Uploaded by a voter'
-                        }}</span>
-                        <span>{{ uploadedAt(sheet) }}</span>
-                    </p>
-                </a>
-            </section>
 
             <Link
                 :href="results()"
