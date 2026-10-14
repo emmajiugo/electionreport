@@ -4,14 +4,14 @@ This guide covers the first deployment of ElectionReport to [Laravel Cloud](http
 
 ## What the app needs
 
-| Need                         | Laravel Cloud resource               | Why                                                                                                                                                     |
-| ---------------------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Database                     | Laravel Serverless Postgres          | Laravel Cloud does not support SQLite. Postgres includes a connection pooler that allows up to 10,000 connections, which many autoscaled replicas need. |
-| Cache, sessions, rate limits | Laravel Valkey                       | Keeps the results cache, sessions and per-IP rate limits off the database.                                                                              |
-| Compute                      | App cluster, Pro class in production | Pro sizes are always on and built for sustained load.                                                                                                   |
-| Inertia SSR                  | "Use Inertia SSR" on the App cluster | `config/inertia.php` has SSR enabled, so the app expects an SSR server.                                                                                 |
-| Queue workers, scheduler     | None                                 | The app has no queued jobs or scheduled tasks.                                                                                                          |
-| Object storage               | None                                 | Party logos and map data ship inside the repository.                                                                                                    |
+| Need                         | Laravel Cloud resource                | Why                                                                                                                                                     |
+| ---------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Database                     | Laravel Serverless Postgres           | Laravel Cloud does not support SQLite. Postgres includes a connection pooler that allows up to 10,000 connections, which many autoscaled replicas need. |
+| Cache, sessions, rate limits | Laravel Valkey                        | Keeps the results cache, sessions and per-IP rate limits off the database.                                                                              |
+| Compute                      | App cluster, Pro class in production  | Pro sizes are always on and built for sustained load.                                                                                                   |
+| Inertia SSR                  | "Use Inertia SSR" on the App cluster  | `config/inertia.php` has SSR enabled, so the app expects an SSR server.                                                                                 |
+| Queue workers, scheduler     | None                                  | The app has no queued jobs or scheduled tasks.                                                                                                          |
+| Object storage               | Laravel Object Storage, public bucket | Result sheet photos that voters upload. The app filesystem is wiped on every deploy and not shared between replicas, so photos cannot live on it.       |
 
 ## Before the first deploy
 
@@ -38,9 +38,10 @@ This guide covers the first deployment of ElectionReport to [Laravel Cloud](http
     - **production**, for the public site.
 3. For each environment, attach:
     - a **Laravel Serverless Postgres** database,
-    - a **Laravel Valkey** cache, with the eviction policy set to `allkeys-lru`.
+    - a **Laravel Valkey** cache, with the eviction policy set to `allkeys-lru`,
+    - a **Laravel Object Storage** bucket for result sheet photos. See [Result sheet storage](#result-sheet-storage) for its settings.
 
-    Attaching a resource injects its connection variables (`DB_HOST`, `DB_USERNAME`, `DB_PASSWORD`, `DB_DATABASE`, `REDIS_HOST`, `REDIS_PASSWORD`) and takes effect on the next deploy.
+    Attaching a resource injects its connection variables (`DB_HOST`, `DB_USERNAME`, `DB_PASSWORD`, `DB_DATABASE`, `REDIS_HOST`, `REDIS_PASSWORD`, and the bucket's `AWS_*` credentials) and takes effect on the next deploy.
 
 ## Build and deploy commands
 
@@ -65,6 +66,22 @@ Do not add `queue:restart`, `optimize:clear` or `storage:link` to the deploy com
 ## Turn on Inertia SSR
 
 Edit the environment's App cluster, turn on **Use Inertia SSR**, save, and deploy. The `build:ssr` build command above produces the server bundle this setting runs.
+
+## Result sheet storage
+
+Voters can upload a photo of their polling unit's result sheet (Form EC8A). Anyone can view these photos, so they go in a public bucket.
+
+1. On the environment's infrastructure canvas, click **Add bucket**, choose to create a new bucket, and select **Laravel Object Storage**.
+2. Fill in the bucket settings:
+    - **Name:** `electionreport-result-sheets-production`, or `-staging` for staging. Give each environment its own bucket, so load-test photos never mix with real ones.
+    - **Visibility:** Public. Visibility applies to the whole bucket and is the only visibility setting that matters. Laravel Cloud buckets run on Cloudflare R2, which rejects per-file visibility, so the app never sets it.
+    - **Disk name:** `public`. The app stores photos on the disk named in `ELECTIONREPORT_RESULT_SHEET_DISK`, which defaults to `public`, so this name needs no extra variable.
+    - **Default disk:** leave this off. The app has no other files to store.
+    - **Jurisdiction:** Automatic. **Location hint:** Western Europe, the option closest to Nigeria. Neither can change after creation.
+3. Redeploy the environment so the bucket's credentials take effect.
+4. Check the setup in test mode. Report from a polling unit as a tester, upload a result sheet photo, and open it from the result sheet page. The photo's address should be the bucket's public URL, shown on the bucket's settings page. If it starts with your `APP_URL` followed by `/storage`, the bucket is not attached with the disk name `public`.
+
+Photos are stored once, never changed, and sent with a one-year cache header, so a browser that has shown a photo does not download it again. Photos uploaded in test mode go under a `test/` prefix and live ones under `live/`. Before election day, you can delete the `test/` folder from the bucket, for example with Cyberduck as the Laravel Cloud object storage docs describe, without touching anything live.
 
 ## Environment variables
 
