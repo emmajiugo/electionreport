@@ -76,7 +76,11 @@ final readonly class ResultSheetImage
     {
         $path = AppMode::current()->value."/result-sheets/{$electionId}/".Str::uuid().'.jpg';
 
-        Storage::disk(ResultSheet::disk())->put($path, $this->jpeg, 'public');
+        // Every photo gets a fresh path and is never rewritten, so browsers and CDNs may keep it for good.
+        Storage::disk(ResultSheet::disk())->put($path, $this->jpeg, [
+            'visibility' => 'public',
+            'CacheControl' => 'public, max-age=31536000, immutable',
+        ]);
 
         return $path;
     }

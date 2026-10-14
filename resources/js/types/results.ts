@@ -39,7 +39,23 @@ export type Results = {
     notVotedReasons: ReasonResult[];
     states: AreaResult[];
     lgas: AreaResult[];
+    sheets: {
+        polling_units: number;
+        corroborated: number;
+        contested: number;
+        units: SheetUnit[];
+    };
     generatedAt: string;
+};
+
+export type SheetUnit = {
+    id: number;
+    name: string;
+    code: string;
+    lga: string;
+    sheets: number;
+    status: 'contested' | 'corroborated' | 'unconfirmed';
+    status_label: string;
 };
 
 export type MapMetric = 'reports' | 'not_held' | 'not_voted';

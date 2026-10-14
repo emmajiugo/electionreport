@@ -9,7 +9,14 @@ import StatTile from '@/components/results/StatTile.vue';
 import StateMap from '@/components/results/StateMap.vue';
 import { formatNumber, formatPercent, percent } from '@/lib/format';
 import { home, results as resultsRoute } from '@/routes';
-import type { AreaResult, Election, MapMetric, Results } from '@/types';
+import { resultSheets } from '@/routes/polling-units';
+import type {
+    AreaResult,
+    Election,
+    MapMetric,
+    Results,
+    SheetUnit,
+} from '@/types';
 
 const props = defineProps<{
     election: Election | null;
@@ -82,6 +89,15 @@ const updatedAt = computed(() =>
           })
         : null,
 );
+
+const sheetStatusClass: Record<SheetUnit['status'], string> = {
+    contested:
+        'bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-200',
+    corroborated:
+        'bg-green-50 text-green-800 dark:bg-green-950 dark:text-green-200',
+    unconfirmed:
+        'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
+};
 
 function scopeTo(stateId: number | null): void {
     router.get(
@@ -231,6 +247,85 @@ function selectFromMap(state: AreaResult): void {
                     <BarList :rows="notVotedRows" />
                 </section>
             </div>
+
+            <section
+                class="flex flex-col gap-4 rounded-xl bg-white p-4 dark:bg-gray-900"
+            >
+                <div>
+                    <h2 class="font-semibold">Result sheets</h2>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">
+                        Photos of polling unit result sheets (Form EC8A),
+                        confirmed or disputed by other voters at the same
+                        polling unit.
+                    </p>
+                </div>
+                <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                    <StatTile
+                        label="Polling units with a sheet"
+                        :value="formatNumber(results.sheets.polling_units)"
+                        :detail="`of ${formatNumber(summary.polling_units)} (${formatPercent(percent(results.sheets.polling_units, summary.polling_units))})`"
+                    />
+                    <StatTile
+                        label="Confirmed by several voters"
+                        :value="formatNumber(results.sheets.corroborated)"
+                        detail="polling units"
+                    />
+                    <StatTile
+                        label="Disputed by voters"
+                        :value="formatNumber(results.sheets.contested)"
+                        detail="polling units"
+                    />
+                </div>
+                <ul
+                    v-if="selectedState && results.sheets.units.length"
+                    class="flex flex-col divide-y divide-gray-100 dark:divide-gray-800"
+                >
+                    <li v-for="unit in results.sheets.units" :key="unit.id">
+                        <Link
+                            :href="resultSheets(unit.id)"
+                            class="flex items-center justify-between gap-3 py-3"
+                        >
+                            <span class="flex min-w-0 flex-col">
+                                <span
+                                    class="truncate font-medium text-green-700 dark:text-green-400"
+                                    >{{ unit.name }}</span
+                                >
+                                <span
+                                    class="text-sm text-gray-600 dark:text-gray-400"
+                                    >{{ unit.code }} · {{ unit.lga }} ·
+                                    {{ unit.sheets }}
+                                    {{
+                                        unit.sheets === 1 ? 'sheet' : 'sheets'
+                                    }}</span
+                                >
+                            </span>
+                            <span
+                                class="shrink-0 rounded-lg px-2 py-1 text-xs"
+                                :class="sheetStatusClass[unit.status]"
+                                >{{ unit.status_label }}</span
+                            >
+                        </Link>
+                    </li>
+                </ul>
+                <p
+                    v-if="
+                        selectedState &&
+                        results.sheets.units.length <
+                            results.sheets.polling_units
+                    "
+                    class="text-sm text-gray-600 dark:text-gray-400"
+                >
+                    Showing {{ results.sheets.units.length }} of
+                    {{ formatNumber(results.sheets.polling_units) }}, disputed
+                    polling units first.
+                </p>
+                <p
+                    v-if="!selectedState"
+                    class="text-sm text-gray-600 dark:text-gray-400"
+                >
+                    Choose a state to see its polling units with result sheets.
+                </p>
+            </section>
 
             <section
                 class="flex flex-col gap-4 rounded-xl bg-white p-4 dark:bg-gray-900"

@@ -18,6 +18,7 @@ export type Party = {
 };
 
 export type PollingUnitDetails = {
+    id: number;
     name: string;
     code: string;
     ward: string;

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\LocationController;
+use App\Http\Controllers\PollingUnitResultSheetController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ResultsController;
 use App\Http\Controllers\ResultSheetController;
@@ -14,6 +15,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', [VinController::class, 'create'])->name('home');
 Route::post('/vin', [VinController::class, 'store'])->middleware('throttle:vin')->name('vin.store');
 Route::get('/results', [ResultsController::class, 'index'])->name('results');
+Route::get('/polling-units/{pollingUnit}/result-sheets', [PollingUnitResultSheetController::class, 'show'])->name('polling-units.result-sheets');
 Route::get('/reports/submitted', [ReportController::class, 'submitted'])->name('reports.submitted');
 Route::get('/feedback', [FeedbackController::class, 'show'])->name('feedback');
 

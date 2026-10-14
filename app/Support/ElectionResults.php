@@ -46,8 +46,22 @@ final readonly class ElectionResults
             'lgas' => $this->state
                 ? $this->areaRows($this->state->lgas()->orderBy('name')->get(), 'lgas.id')
                 : [],
+            'sheets' => $this->resultSheets(),
             'generatedAt' => now()->toIso8601String(),
         ]);
+    }
+
+    /**
+     * @return array{polling_units: int, corroborated: int, contested: int, units: list<array<string, mixed>>}
+     */
+    private function resultSheets(): array
+    {
+        $coverage = new ResultSheetCoverage($this->election, $this->state);
+
+        return [
+            ...$coverage->summary(),
+            'units' => $this->state ? $coverage->pollingUnits() : [],
+        ];
     }
 
     /**
