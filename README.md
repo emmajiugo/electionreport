@@ -19,8 +19,11 @@ Set `ELECTIONREPORT_HASH_KEY` in `.env` to a long random string, for example the
 
 ```bash
 php artisan migrate --seed
+php artisan storage:link
 composer run dev
 ```
+
+`storage:link` lets the browser load result sheet photos, which are stored on the `public` disk locally. In production, set `ELECTIONREPORT_RESULT_SHEET_DISK` to a public bucket disk.
 
 The seeder loads the 2023 presidential parties, a 2027 presidential election that is open for reports, and INEC's full register of 176,623 polling units from `database/data/locations.json.gz`.
 

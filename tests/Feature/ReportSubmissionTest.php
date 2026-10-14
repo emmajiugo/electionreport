@@ -90,14 +90,29 @@ test('a voter can report who they voted for without the raw VIN being stored', f
         ->and(json_encode(Report::query()->toBase()->first()))->not->toContain(VIN);
 });
 
-test('submitting a report ends the VIN session and shows the thank you page once', function () {
+test('reporting the election did not hold ends the VIN session and shows the thank you page once', function () {
     enterVin();
 
-    $this->post(route('reports.store'), votedReport())->assertSessionMissing(EnsureVinEntered::SESSION_KEY);
+    $this->post(route('reports.store'), [
+        'polling_unit_id' => $this->pollingUnit->id,
+        'election_held' => false,
+        'not_held_reason' => ElectionNotHeldReason::OfficialsAbsent->value,
+    ])->assertSessionMissing(EnsureVinEntered::SESSION_KEY);
 
-    $this->get(route('reports.submitted'))->assertInertia(fn (Assert $page) => $page->component('Report/Submitted'));
+    $this->get(route('reports.submitted'))->assertInertia(fn (Assert $page) => $page
+        ->component('Report/Submitted')
+        ->where('canAddResultSheet', false));
     $this->get(route('reports.submitted'))->assertRedirect(route('home'));
     $this->get(route('reports.create'))->assertRedirect(route('home'));
+});
+
+test('reporting the election held keeps the VIN session so the voter can add the result sheet', function () {
+    enterVin();
+
+    $this->post(route('reports.store'), votedReport())->assertSessionHas(EnsureVinEntered::SESSION_KEY);
+
+    $this->get(route('reports.submitted'))->assertInertia(fn (Assert $page) => $page->where('canAddResultSheet', true));
+    $this->get(route('reports.create'))->assertRedirect(route('result-sheets.create'));
 });
 
 test('the thank you page cannot be opened directly', function () {
@@ -172,18 +187,24 @@ test('reports are rejected when no election is accepting them', function () {
 });
 
 test('report submissions are rate limited per session, not per shared IP', function () {
+    // Reporting the election did not hold ends each voter's VIN session, so the next voter on this session starts clean.
+    $notHeldReport = [
+        'polling_unit_id' => $this->pollingUnit->id,
+        'election_held' => false,
+        'not_held_reason' => ElectionNotHeldReason::OfficialsAbsent->value,
+    ];
     $this->withCookie(config('session.cookie'), Str::random(40));
 
     foreach (range(1, 10) as $attempt) {
         enterVin(str_pad((string) $attempt, 19, 'A'));
-        $this->post(route('reports.store'), votedReport());
+        $this->post(route('reports.store'), $notHeldReport);
     }
 
     enterVin(str_repeat('B', 19));
-    $this->post(route('reports.store'), votedReport())->assertTooManyRequests();
+    $this->post(route('reports.store'), $notHeldReport)->assertTooManyRequests();
 
     $this->withCookie(config('session.cookie'), Str::random(40))
-        ->post(route('reports.store'), votedReport())
+        ->post(route('reports.store'), $notHeldReport)
         ->assertRedirect(route('reports.submitted'));
 
     expect(Report::count())->toBe(11);

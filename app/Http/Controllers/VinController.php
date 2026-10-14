@@ -28,6 +28,10 @@ class VinController extends Controller
             'masked' => $vin->masked(),
         ]);
 
+        if ($request->election()?->hasReportFrom($vin->hash())) {
+            return to_route('result-sheets.create');
+        }
+
         return to_route('reports.create');
     }
 }

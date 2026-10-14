@@ -32,4 +32,14 @@ class ReportFactory extends Factory
             'user_agent' => fake()->userAgent(),
         ];
     }
+
+    public function electionNotHeld(): static
+    {
+        return $this->state(fn (): array => [
+            'election_held' => false,
+            'not_held_reason' => 'officials_absent',
+            'voted' => null,
+            'not_voted_reason' => null,
+        ]);
+    }
 }

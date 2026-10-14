@@ -41,6 +41,8 @@ class AppServiceProvider extends ServiceProvider
 
         RateLimiter::for('vin', fn (Request $request): Limit => Limit::perMinute(10)->by('vin:'.$request->session()->getId()));
 
+        RateLimiter::for('result-sheets', fn (Request $request): Limit => Limit::perMinute(5)->by('result-sheets:'.$request->session()->getId()));
+
         RateLimiter::for('locations', fn (Request $request): Limit => Limit::perMinute(60)->by('locations:'.$request->session()->getId()));
     }
 

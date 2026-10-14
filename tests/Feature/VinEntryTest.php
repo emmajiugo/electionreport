@@ -84,8 +84,18 @@ test('a malformed VIN is rejected', function (string $vin) {
         ->assertSessionMissing(EnsureVinEntered::SESSION_KEY);
 })->with(['too short' => '90F5B1C3', 'too long' => ENTERED_VIN.'X', 'symbols' => '90F5B1C3E29501234$6', 'empty' => '']);
 
-test('a VIN that already reported is turned away before the form', function () {
+test('a VIN that reported the election held comes back to add the result sheet', function () {
     Report::factory()->for($this->election)->create([
+        'vin_hash' => VoterIdentificationNumber::fromInput(ENTERED_VIN)->hash(),
+    ]);
+
+    $this->post(route('vin.store'), ['turnstile_token' => 'token', 'vin' => strtolower(ENTERED_VIN)])
+        ->assertRedirect(route('result-sheets.create'))
+        ->assertSessionHas(EnsureVinEntered::SESSION_KEY.'.hash', VoterIdentificationNumber::fromInput(ENTERED_VIN)->hash());
+});
+
+test('a VIN that reported the election did not hold is turned away', function () {
+    Report::factory()->electionNotHeld()->for($this->election)->create([
         'vin_hash' => VoterIdentificationNumber::fromInput(ENTERED_VIN)->hash(),
     ]);
 

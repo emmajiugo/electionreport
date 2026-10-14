@@ -65,7 +65,12 @@ class StoreVinRequest extends FormRequest
                     return;
                 }
 
-                if (! $validator->errors()->has('vin') && $this->election()->hasReportFrom($this->vin()->hash())) {
+                if ($validator->errors()->has('vin')) {
+                    return;
+                }
+
+                // A voter whose election held may come back to add the result sheet; nothing else is left to do.
+                if ($this->election()->reportFrom($this->vin()->hash())?->election_held === false) {
                     $validator->errors()->add('vin', Election::duplicateVinMessage());
                 }
             },

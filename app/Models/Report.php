@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * @property int $id
@@ -69,6 +70,14 @@ class Report extends Model
     public function party(): BelongsTo
     {
         return $this->belongsTo(Party::class);
+    }
+
+    /**
+     * @return HasOne<ResultSheet, $this>
+     */
+    public function resultSheet(): HasOne
+    {
+        return $this->hasOne(ResultSheet::class);
     }
 
     /**

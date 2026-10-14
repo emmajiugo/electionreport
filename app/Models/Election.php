@@ -64,6 +64,11 @@ class Election extends Model
         return $this->reports()->where('vin_hash', $vinHash)->exists();
     }
 
+    public function reportFrom(string $vinHash): ?Report
+    {
+        return $this->reports()->where('vin_hash', $vinHash)->first();
+    }
+
     public static function duplicateVinMessage(): string
     {
         return 'A report has already been submitted with this VIN.';

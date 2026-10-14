@@ -17,6 +17,21 @@ export type Party = {
     running_mate: string | null;
 };
 
+export type PollingUnitDetails = {
+    name: string;
+    code: string;
+    ward: string;
+    lga: string;
+    state: string;
+};
+
+export type ResultSheet = {
+    id: number;
+    url: string;
+    uploaded_at: string;
+    is_yours: boolean;
+};
+
 export type Election = {
     id: number;
     name: string;

@@ -40,4 +40,17 @@ return [
 
     'feedback_url' => env('ELECTIONREPORT_FEEDBACK_URL'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Result Sheet Disk
+    |--------------------------------------------------------------------------
+    |
+    | The filesystem disk that holds photos of polling unit result sheets.
+    | Result sheets are public documents, so the disk must serve files
+    | publicly: "public" locally, the Laravel Cloud bucket in production.
+    |
+    */
+
+    'result_sheet_disk' => env('ELECTIONREPORT_RESULT_SHEET_DISK', 'public'),
+
 ];

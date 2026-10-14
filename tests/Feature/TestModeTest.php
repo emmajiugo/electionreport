@@ -7,9 +7,11 @@ use App\Models\PollingUnit;
 use App\Models\Report;
 use App\Rules\Turnstile;
 use App\Support\VoterIdentificationNumber;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 
 const TESTER_VIN = '90F5B1C3E2950123456';
@@ -95,10 +97,23 @@ test('pages know whether the app is in test mode', function (string $configured,
     'empty value falls back to test' => ['', 'test'],
 ]);
 
-test('the test reports table matches the live reports table', function () {
+test('each test table matches its live table', function (string $live) {
     $columns = fn (string $table) => collect(Schema::getColumns($table))
         ->map(fn (array $column) => [$column['name'], $column['type_name'], $column['nullable']])
         ->all();
 
-    expect($columns('test_reports'))->toBe($columns('reports'));
+    expect($columns("test_{$live}"))->toBe($columns($live));
+})->with(['reports', 'result_sheets']);
+
+test('result sheets uploaded in test mode are kept apart from live ones', function () {
+    Storage::fake('public');
+    useMode('test');
+    submitReportAs(TESTER_VIN);
+
+    $this->post(route('result-sheets.store'), ['result_sheet' => UploadedFile::fake()->image('sheet.jpg', 800, 600)])
+        ->assertRedirect(route('result-sheets.create'));
+
+    expect(DB::table('test_result_sheets')->count())->toBe(1)
+        ->and(DB::table('result_sheets')->count())->toBe(0)
+        ->and(DB::table('test_result_sheets')->value('path'))->toStartWith('test/result-sheets/');
 });

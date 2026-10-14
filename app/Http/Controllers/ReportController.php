@@ -19,9 +19,13 @@ use Inertia\Response;
 
 class ReportController extends Controller
 {
-    public function create(Request $request): Response
+    public function create(Request $request): Response|RedirectResponse
     {
         $election = Election::current();
+
+        if ($election?->hasReportFrom($request->session()->get(EnsureVinEntered::SESSION_KEY.'.hash'))) {
+            return to_route('result-sheets.create');
+        }
 
         return Inertia::render('Report/Create', [
             'election' => $election?->only('id', 'name'),
@@ -65,7 +69,11 @@ class ReportController extends Controller
             throw ValidationException::withMessages(['vin' => Election::duplicateVinMessage()]);
         }
 
-        $request->session()->forget(EnsureVinEntered::SESSION_KEY);
+        // A voter whose election held keeps the VIN session so they can add the result sheet straight away.
+        if (! $request->boolean('election_held')) {
+            $request->session()->forget(EnsureVinEntered::SESSION_KEY);
+        }
+
         $request->session()->flash('report_submitted', true);
 
         return to_route('reports.submitted');
@@ -77,6 +85,8 @@ class ReportController extends Controller
             return to_route('home');
         }
 
-        return Inertia::render('Report/Submitted');
+        return Inertia::render('Report/Submitted', [
+            'canAddResultSheet' => $request->session()->has(EnsureVinEntered::SESSION_KEY),
+        ]);
     }
 }
