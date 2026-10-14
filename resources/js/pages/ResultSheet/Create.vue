@@ -2,12 +2,15 @@
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import AppHeader from '@/components/AppHeader.vue';
+import ResultSheetFiguresForm from '@/components/ResultSheetFiguresForm.vue';
 import ResultSheetPicker from '@/components/ResultSheetPicker.vue';
 import { home, results } from '@/routes';
 import { store } from '@/routes/result-sheets';
 import { store as storeReview } from '@/routes/result-sheets/reviews';
 import type {
+    BallotParty,
     Election,
+    FigureField,
     PollingUnitDetails,
     ResultSheet,
     ResultSheetReview,
@@ -21,6 +24,9 @@ defineProps<{
     sheets: ResultSheet[];
     hasUploaded: boolean;
     yourReview: ResultSheetReview | null;
+    canAddFigures: boolean;
+    figureFields: FigureField[];
+    parties: BallotParty[];
 }>();
 
 const form = useForm({
@@ -151,6 +157,42 @@ function uploadedAt(sheet: ResultSheet): string {
                             {{ sheet.disputes }} disputed
                         </p>
 
+                        <details v-if="sheet.figures" class="text-sm">
+                            <summary class="cursor-pointer font-medium">
+                                Figures typed in by the uploader
+                            </summary>
+                            <dl class="mt-2 flex flex-col gap-1">
+                                <div
+                                    v-for="field in figureFields"
+                                    :key="field.key"
+                                    class="flex justify-between gap-3"
+                                >
+                                    <dt
+                                        class="text-gray-600 dark:text-gray-400"
+                                    >
+                                        {{ field.label }}
+                                    </dt>
+                                    <dd class="font-mono">
+                                        {{ sheet.figures[field.key] }}
+                                    </dd>
+                                </div>
+                                <div
+                                    v-for="party in parties"
+                                    :key="party.id"
+                                    class="flex justify-between gap-3"
+                                >
+                                    <dt class="font-semibold">
+                                        {{ party.acronym }}
+                                    </dt>
+                                    <dd class="font-mono">
+                                        {{
+                                            sheet.figures.party_votes[party.id]
+                                        }}
+                                    </dd>
+                                </div>
+                            </dl>
+                        </details>
+
                         <p
                             v-if="yourReview?.result_sheet_id === sheet.id"
                             class="text-sm font-medium"
@@ -192,6 +234,12 @@ function uploadedAt(sheet: ResultSheet): string {
             >
                 Thank you. Your photo of the result sheet is uploaded.
             </p>
+
+            <ResultSheetFiguresForm
+                v-if="canAddFigures"
+                :fields="figureFields"
+                :parties="parties"
+            />
 
             <form v-else class="flex flex-col gap-4" @submit.prevent="upload">
                 <h2 v-if="sheets.length" class="font-semibold">

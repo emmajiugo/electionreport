@@ -49,6 +49,11 @@ class ResultSheetController extends Controller
             ],
             'sheets' => $this->sheetsAt($report),
             'hasUploaded' => $report->resultSheet()->exists(),
+            'canAddFigures' => $report->resultSheet()->whereNull('figures_recorded_at')->exists(),
+            'figureFields' => collect(ResultSheet::FIGURES)
+                ->map(fn (string $label, string $key): array => ['key' => $key, 'label' => $label])
+                ->values(),
+            'parties' => $election->parties()->orderBy('acronym')->get(['parties.id', 'acronym', 'name']),
             'yourReview' => $report->resultSheetReview()->first()?->only('result_sheet_id', 'verdict'),
         ]);
     }
@@ -56,7 +61,7 @@ class ResultSheetController extends Controller
     /**
      * The polling unit's sheets, best supported first, so a voter sees the leading sheet before any rival.
      *
-     * @return array<int, array{id: int, url: string, uploaded_at: ?string, is_yours: bool, confirmations: int, disputes: int, status: string, status_label: string}>
+     * @return array<int, array{id: int, url: string, uploaded_at: ?string, is_yours: bool, confirmations: int, disputes: int, status: string, status_label: string, figures: array<string, mixed>|null}>
      */
     private function sheetsAt(Report $report): array
     {
@@ -90,6 +95,9 @@ class ResultSheetController extends Controller
                 'disputes' => $sheet->disputes_count,
                 'status' => $status->value,
                 'status_label' => $status->label(),
+                'figures' => $sheet->hasFigures()
+                    ? [...$sheet->only(array_keys(ResultSheet::FIGURES)), 'party_votes' => $sheet->party_votes]
+                    : null,
             ];
         })->values()->all();
     }

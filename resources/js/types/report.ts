@@ -34,6 +34,22 @@ export type ResultSheet = {
     disputes: number;
     status: 'single_source' | 'partly_confirmed' | 'corroborated' | 'contested';
     status_label: string;
+    figures: ResultSheetFigures | null;
+};
+
+export type ResultSheetFigures = Record<string, number> & {
+    party_votes: Record<string, number>;
+};
+
+export type FigureField = {
+    key: string;
+    label: string;
+};
+
+export type BallotParty = {
+    id: number;
+    acronym: string;
+    name: string;
 };
 
 export type ReviewVerdict = 'confirm' | 'dispute';
