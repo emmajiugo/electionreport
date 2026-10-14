@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ResultSheetFlag;
 use App\Enums\ResultSheetStatus;
 use App\Enums\ReviewVerdict;
 use App\Http\Middleware\EnsureVinEntered;
@@ -9,6 +10,7 @@ use App\Http\Requests\StoreResultSheetRequest;
 use App\Models\Election;
 use App\Models\Report;
 use App\Models\ResultSheet;
+use App\Support\ResultSheetFlags;
 use App\Support\ResultSheetImage;
 use App\Support\VoterIdentificationNumber;
 use Illuminate\Database\Eloquent\Builder;
@@ -61,7 +63,7 @@ class ResultSheetController extends Controller
     /**
      * The polling unit's sheets, best supported first, so a voter sees the leading sheet before any rival.
      *
-     * @return array<int, array{id: int, url: string, uploaded_at: ?string, is_yours: bool, confirmations: int, disputes: int, status: string, status_label: string, figures: array<string, mixed>|null}>
+     * @return array<int, array{id: int, url: string, uploaded_at: ?string, is_yours: bool, confirmations: int, disputes: int, status: string, status_label: string, flags: array<int, array{value: string, label: string}>, figures: array<string, mixed>|null}>
      */
     private function sheetsAt(Report $report): array
     {
@@ -79,7 +81,9 @@ class ResultSheetController extends Controller
             fn (ResultSheet $sheet): bool => $sheet->confirmations_count >= ResultSheetStatus::CORROBORATION_THRESHOLD,
         );
 
-        return $sheets->map(function (ResultSheet $sheet) use ($report, $reachedThreshold): array {
+        $flags = ResultSheetFlags::for($report->election, $sheets);
+
+        return $sheets->map(function (ResultSheet $sheet) use ($report, $reachedThreshold, $flags): array {
             $status = ResultSheetStatus::fromReviews(
                 $sheet->confirmations_count,
                 $sheet->disputes_count,
@@ -95,6 +99,10 @@ class ResultSheetController extends Controller
                 'disputes' => $sheet->disputes_count,
                 'status' => $status->value,
                 'status_label' => $status->label(),
+                'flags' => array_map(
+                    fn (ResultSheetFlag $flag): array => ['value' => $flag->value, 'label' => $flag->label()],
+                    $flags[$sheet->id] ?? [],
+                ),
                 'figures' => $sheet->hasFigures()
                     ? [...$sheet->only(array_keys(ResultSheet::FIGURES)), 'party_votes' => $sheet->party_votes]
                     : null,

@@ -157,6 +157,15 @@ function uploadedAt(sheet: ResultSheet): string {
                             {{ sheet.disputes }} disputed
                         </p>
 
+                        <ul
+                            v-if="sheet.flags.length"
+                            class="flex flex-col gap-1 rounded-lg border border-amber-300 px-3 py-2 text-sm text-amber-900 dark:border-amber-800 dark:text-amber-200"
+                        >
+                            <li v-for="flag in sheet.flags" :key="flag.value">
+                                ⚠ {{ flag.label }}
+                            </li>
+                        </ul>
+
                         <details v-if="sheet.figures" class="text-sm">
                             <summary class="cursor-pointer font-medium">
                                 Figures typed in by the uploader

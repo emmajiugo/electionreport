@@ -34,6 +34,7 @@ export type ResultSheet = {
     disputes: number;
     status: 'single_source' | 'partly_confirmed' | 'corroborated' | 'contested';
     status_label: string;
+    flags: { value: string; label: string }[];
     figures: ResultSheetFigures | null;
 };
 
