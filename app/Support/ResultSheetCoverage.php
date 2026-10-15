@@ -82,6 +82,14 @@ final readonly class ResultSheetCoverage
     }
 
     /**
+     * IDs of the polling units whose sheets voters confirmed, by the same rules as the dashboard.
+     */
+    public function confirmedPollingUnits(): Builder
+    {
+        return $this->units()->whereRaw(self::CONFIRMED)->select('unit_stats.polling_unit_id');
+    }
+
+    /**
      * One row per polling unit with a sheet: how many sheets, how many reached the threshold, and whether any is disputed.
      */
     private function units(): Builder

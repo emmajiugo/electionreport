@@ -47,6 +47,7 @@ final readonly class ElectionResults
                 ? $this->areaRows($this->state->lgas()->orderBy('name')->get(), 'lgas.id')
                 : [],
             'sheets' => $this->resultSheets(),
+            'standings' => (new ReportCorroboration($this->election, $this->state))->standings(),
             'generatedAt' => now()->toIso8601String(),
         ]);
     }

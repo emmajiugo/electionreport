@@ -38,6 +38,28 @@ const metrics: { value: MapMetric; label: string }[] = [
 const summary = computed(() => props.results?.summary);
 const scopeName = computed(() => props.selectedState?.name ?? 'Nigeria');
 
+// Nationally the states compete; inside a state, its LGAs and wards do.
+const standingLists = computed(() => {
+    const standings = props.results?.standings;
+
+    if (!standings) {
+        return [];
+    }
+
+    return props.selectedState
+        ? [
+              {
+                  title: `LGAs in ${props.selectedState.name}`,
+                  rows: standings.lgas,
+              },
+              {
+                  title: `Wards in ${props.selectedState.name}`,
+                  rows: standings.wards,
+              },
+          ]
+        : [{ title: 'States', rows: standings.states }];
+});
+
 // Parties nobody has reported voting for are listed by name instead of as a column of empty bars.
 const partiesWithoutVotes = computed(() =>
     (props.results?.parties ?? [])
@@ -325,6 +347,68 @@ function selectFromMap(state: AreaResult): void {
                 >
                     Choose a state to see its polling units with result sheets.
                 </p>
+            </section>
+
+            <section
+                class="flex flex-col gap-4 rounded-xl bg-white p-4 dark:bg-gray-900"
+            >
+                <div>
+                    <h2 class="font-semibold">Standings</h2>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">
+                        Polling units where at least four voters agree on
+                        whether the election held, or voters confirmed the
+                        result sheet. Each polling unit counts once, however
+                        many reports it gets.
+                    </p>
+                </div>
+                <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+                    <div
+                        v-for="list in standingLists"
+                        :key="list.title"
+                        class="flex flex-col gap-2"
+                    >
+                        <h3 class="text-sm font-medium">{{ list.title }}</h3>
+                        <ol
+                            v-if="list.rows.length"
+                            class="flex flex-col divide-y divide-gray-100 dark:divide-gray-800"
+                        >
+                            <li
+                                v-for="row in list.rows"
+                                :key="row.id"
+                                class="flex items-center gap-3 py-2"
+                            >
+                                <span
+                                    class="w-6 shrink-0 text-right text-sm text-gray-500 tabular-nums"
+                                    >{{ row.rank }}</span
+                                >
+                                <span class="flex min-w-0 grow flex-col">
+                                    <span class="truncate">{{ row.name }}</span>
+                                    <span
+                                        v-if="row.lga"
+                                        class="truncate text-xs text-gray-500"
+                                        >{{ row.lga }} LGA</span
+                                    >
+                                </span>
+                                <span
+                                    class="shrink-0 text-sm text-gray-600 tabular-nums dark:text-gray-400"
+                                    >{{ formatNumber(row.polling_units) }}
+                                    {{
+                                        row.polling_units === 1
+                                            ? 'polling unit'
+                                            : 'polling units'
+                                    }}</span
+                                >
+                            </li>
+                        </ol>
+                        <p
+                            v-else
+                            class="text-sm text-gray-600 dark:text-gray-400"
+                        >
+                            No polling unit here is backed up by several voters
+                            yet.
+                        </p>
+                    </div>
+                </div>
             </section>
 
             <section

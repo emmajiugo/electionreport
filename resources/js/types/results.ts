@@ -45,7 +45,21 @@ export type Results = {
         contested: number;
         units: SheetUnit[];
     };
+    standings: {
+        states: Standing[];
+        lgas: Standing[];
+        wards: Standing[];
+    };
     generatedAt: string;
+};
+
+export type Standing = {
+    id: number;
+    name: string;
+    /** Wards only: their names repeat across LGAs. */
+    lga?: string;
+    polling_units: number;
+    rank: number;
 };
 
 export type SheetUnit = {
