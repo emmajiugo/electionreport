@@ -18,11 +18,6 @@ final readonly class VoterIdentificationNumber
         return strtoupper((string) preg_replace('/[^A-Za-z0-9]/', '', $input));
     }
 
-    public static function isValid(string $normalized): bool
-    {
-        return preg_match('/^[A-Z0-9]{'.self::LENGTH.'}$/', $normalized) === 1;
-    }
-
     public static function fromInput(string $input): self
     {
         return new self(self::normalize($input));

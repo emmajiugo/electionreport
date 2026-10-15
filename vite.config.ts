@@ -66,14 +66,8 @@ export default defineConfig({
         semi: true,
         singleAttributePerLine: false,
         htmlWhitespaceSensitivity: 'css',
-        ignorePatterns: [
-            '.github/**',
-            'composer.json',
-            'resources/js/components/ui/*',
-            'resources/views/mail/*',
-        ],
+        ignorePatterns: ['.github/**', 'composer.json'],
         sortTailwindcss: {
-            functions: ['clsx', 'cn', 'cva'],
             stylesheet: 'resources/css/app.css',
         },
     },
