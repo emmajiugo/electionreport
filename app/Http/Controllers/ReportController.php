@@ -25,13 +25,26 @@ class ReportController extends Controller
 {
     public function create(Request $request): Response|RedirectResponse
     {
+        return $this->reportPage($request, 'Report/Create');
+    }
+
+    /**
+     * Story mode: the same questions as the form, told as a day at the polling unit.
+     */
+    public function play(Request $request): Response|RedirectResponse
+    {
+        return $this->reportPage($request, 'Play/Show');
+    }
+
+    private function reportPage(Request $request, string $component): Response|RedirectResponse
+    {
         $election = Election::current();
 
         if ($election?->hasReportFrom($request->session()->get(EnsureVinEntered::SESSION_KEY.'.hash'))) {
             return to_route('result-sheets.create');
         }
 
-        return Inertia::render('Report/Create', [
+        return Inertia::render($component, [
             'election' => $election?->only('id', 'name'),
             'maskedVin' => $request->session()->get(EnsureVinEntered::SESSION_KEY.'.masked'),
             'parties' => $election?->parties()->orderBy('acronym')->get()

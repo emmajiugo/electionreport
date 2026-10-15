@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { Head, Link, useForm } from '@inertiajs/vue3';
-import { computed, ref, watch } from 'vue';
+import { Head, Link } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import AppHeader from '@/components/AppHeader.vue';
-import PartyLogo from '@/components/PartyLogo.vue';
+import PartyPicker from '@/components/PartyPicker.vue';
+import PollingUnitPicker from '@/components/PollingUnitPicker.vue';
 import ReasonPicker from '@/components/ReasonPicker.vue';
 import ResultSheetPicker from '@/components/ResultSheetPicker.vue';
-import SelectChevron from '@/components/SelectChevron.vue';
+import { useReportFlow } from '@/lib/report-flow';
 import { home } from '@/routes';
-import { lgas, pollingUnits, wards } from '@/routes/locations';
-import { store } from '@/routes/reports';
+import { play } from '@/routes/reports';
 import type { Election, Option, Party, ReasonOption } from '@/types';
 
 const props = defineProps<{
@@ -20,212 +20,19 @@ const props = defineProps<{
     notVotedReasons: ReasonOption[];
 }>();
 
-type Step =
-    | 'location'
-    | 'held'
-    | 'notHeldReason'
-    | 'voted'
-    | 'notVotedReason'
-    | 'party'
-    | 'resultSheet';
-
-const step = ref<Step>('location');
-const history = ref<Step[]>([]);
-
-const form = useForm({
-    polling_unit_id: null as number | null,
-    election_held: null as boolean | null,
-    not_held_reason: null as string | null,
-    voted: null as boolean | null,
-    not_voted_reason: null as string | null,
-    party_id: null as number | null,
-    reason_details: '',
-    result_sheet: null as File | null,
-    website: '',
-});
-
-const preparingPhoto = ref(false);
-
-const stateId = ref<number | null>(null);
-const lgaId = ref<number | null>(null);
-const wardId = ref<number | null>(null);
-const lgaOptions = ref<Option[]>([]);
-const wardOptions = ref<Option[]>([]);
-const pollingUnitOptions = ref<Option[]>([]);
-const pollingUnitQuery = ref('');
-
-// Some wards have close to 300 units, far too many to scroll through on a phone.
-const filteredPollingUnits = computed(() => {
-    const query = pollingUnitQuery.value.trim().toLowerCase();
-
-    if (query === '') {
-        return pollingUnitOptions.value;
-    }
-
-    return pollingUnitOptions.value.filter(
-        (unit) =>
-            unit.id === form.polling_unit_id ||
-            unit.name.toLowerCase().includes(query),
-    );
-});
-const loadingLocations = ref(false);
-const locationError = ref<string | null>(null);
-
-async function fetchOptions(url: string): Promise<Option[]> {
-    loadingLocations.value = true;
-    locationError.value = null;
-
-    try {
-        const response = await fetch(url, {
-            headers: { Accept: 'application/json' },
-        });
-
-        if (!response.ok) {
-            throw new Error(String(response.status));
-        }
-
-        return (await response.json()) as Option[];
-    } catch {
-        locationError.value =
-            'Could not load locations. Check your connection and try again.';
-
-        return [];
-    } finally {
-        loadingLocations.value = false;
-    }
-}
-
-watch(stateId, async (id) => {
-    lgaId.value = null;
-    lgaOptions.value = id ? await fetchOptions(lgas.url(id)) : [];
-});
-
-watch(lgaId, async (id) => {
-    wardId.value = null;
-    wardOptions.value = id ? await fetchOptions(wards.url(id)) : [];
-});
-
-watch(wardId, async (id) => {
-    form.polling_unit_id = null;
-    pollingUnitQuery.value = '';
-    pollingUnitOptions.value = id
-        ? await fetchOptions(pollingUnits.url(id))
-        : [];
-});
-
-const canContinue = computed(() => {
-    switch (step.value) {
-        case 'location':
-            return form.polling_unit_id !== null;
-        case 'notHeldReason':
-            return hasReason(form.not_held_reason);
-        case 'notVotedReason':
-            return hasReason(form.not_voted_reason);
-        case 'party':
-            return form.party_id !== null;
-        case 'resultSheet':
-            return !preparingPhoto.value;
-        default:
-            return false;
-    }
-});
-
-const isFinalStep = computed(() =>
-    ['notHeldReason', 'resultSheet'].includes(step.value),
-);
-
-function hasReason(reason: string | null): boolean {
-    if (reason === null) {
-        return false;
-    }
-
-    return reason !== 'other' || form.reason_details.trim() !== '';
-}
-
-function goTo(next: Step): void {
-    history.value.push(step.value);
-    step.value = next;
-}
-
-function back(): void {
-    const previous = history.value.pop();
-
-    if (previous) {
-        step.value = previous;
-    }
-}
-
-function answerHeld(held: boolean): void {
-    form.election_held = held;
-    goTo(held ? 'voted' : 'notHeldReason');
-}
-
-function answerVoted(voted: boolean): void {
-    form.voted = voted;
-    goTo(voted ? 'party' : 'notVotedReason');
-}
-
-function next(): void {
-    if (!canContinue.value) {
-        return;
-    }
-
-    if (step.value === 'location') {
-        goTo('held');
-    } else if (step.value === 'notVotedReason' || step.value === 'party') {
-        goTo('resultSheet');
-    } else if (isFinalStep.value) {
-        submit();
-    }
-}
-
-// Server-only errors with no field on this page: the election closed, or this VIN reported from another tab.
-const formError = computed(() => {
-    const errors = form.errors as Partial<Record<string, string>>;
-
-    return errors.election ?? errors.vin;
-});
-
-const stepForField: Record<string, Step> = {
-    polling_unit_id: 'location',
-    not_held_reason: 'notHeldReason',
-    not_voted_reason: 'notVotedReason',
-    party_id: 'party',
-    result_sheet: 'resultSheet',
-};
-
-function submit(): void {
-    const held = form.election_held === true;
-    const voted = held && form.voted === true;
-    const reason = held ? form.not_voted_reason : form.not_held_reason;
-
-    // Answers from branches the voter backed out of must not be sent.
-    form.transform((data) => ({
-        ...data,
-        not_held_reason: held ? null : data.not_held_reason,
-        voted: held ? data.voted : null,
-        not_voted_reason: held && !voted ? data.not_voted_reason : null,
-        party_id: voted ? data.party_id : null,
-        reason_details:
-            !voted && reason === 'other' ? data.reason_details : null,
-        result_sheet: held ? data.result_sheet : null,
-    })).post(store.url(), {
-        onError: (errors) => {
-            const field = Object.keys(errors).find(
-                (key) => key in stepForField,
-            );
-
-            if (field) {
-                const target = stepForField[field];
-                const index = history.value.indexOf(target);
-
-                history.value =
-                    index === -1 ? [] : history.value.slice(0, index);
-                step.value = target;
-            }
-        },
-    });
-}
+const {
+    form,
+    step,
+    history,
+    preparingPhoto,
+    canContinue,
+    isFinalStep,
+    formError,
+    back,
+    answerHeld,
+    answerVoted,
+    next,
+} = useReportFlow();
 
 const title = computed(() => {
     switch (step.value) {
@@ -247,10 +54,6 @@ const title = computed(() => {
             return '';
     }
 });
-
-const fieldClass =
-    'w-full rounded-xl border border-gray-300 bg-white p-3 text-base disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900';
-const selectClass = `${fieldClass} appearance-none pr-10`;
 </script>
 
 <template>
@@ -305,123 +108,23 @@ const selectClass = `${fieldClass} appearance-none pr-10`;
                 {{ formError }}
             </p>
 
-            <div v-if="step === 'location'" class="flex flex-col gap-4">
-                <div class="flex flex-col gap-2">
-                    <label for="state" class="text-sm font-medium">State</label>
-                    <div class="relative">
-                        <select
-                            id="state"
-                            v-model="stateId"
-                            :class="selectClass"
-                        >
-                            <option :value="null" disabled>Select state</option>
-                            <option
-                                v-for="state in props.states"
-                                :key="state.id"
-                                :value="state.id"
-                            >
-                                {{ state.name }}
-                            </option>
-                        </select>
-                        <SelectChevron />
-                    </div>
-                </div>
-                <div class="flex flex-col gap-2">
-                    <label for="lga" class="text-sm font-medium">LGA</label>
-                    <div class="relative">
-                        <select
-                            id="lga"
-                            v-model="lgaId"
-                            :disabled="!lgaOptions.length"
-                            :class="selectClass"
-                        >
-                            <option :value="null" disabled>Select LGA</option>
-                            <option
-                                v-for="lga in lgaOptions"
-                                :key="lga.id"
-                                :value="lga.id"
-                            >
-                                {{ lga.name }}
-                            </option>
-                        </select>
-                        <SelectChevron />
-                    </div>
-                </div>
-                <div class="flex flex-col gap-2">
-                    <label for="ward" class="text-sm font-medium">Ward</label>
-                    <div class="relative">
-                        <select
-                            id="ward"
-                            v-model="wardId"
-                            :disabled="!wardOptions.length"
-                            :class="selectClass"
-                        >
-                            <option :value="null" disabled>Select ward</option>
-                            <option
-                                v-for="ward in wardOptions"
-                                :key="ward.id"
-                                :value="ward.id"
-                            >
-                                {{ ward.name }}
-                            </option>
-                        </select>
-                        <SelectChevron />
-                    </div>
-                </div>
-                <div class="flex flex-col gap-2">
-                    <label for="polling-unit" class="text-sm font-medium">
-                        Polling unit
-                    </label>
-                    <input
-                        v-if="pollingUnitOptions.length"
-                        v-model="pollingUnitQuery"
-                        type="search"
-                        aria-label="Search polling units"
-                        :placeholder="`Search ${pollingUnitOptions.length} polling units`"
-                        :class="fieldClass"
-                    />
-                    <div class="relative">
-                        <select
-                            id="polling-unit"
-                            v-model="form.polling_unit_id"
-                            :disabled="!pollingUnitOptions.length"
-                            :class="selectClass"
-                        >
-                            <option :value="null" disabled>
-                                {{
-                                    pollingUnitQuery &&
-                                    !filteredPollingUnits.length
-                                        ? 'No polling units match your search'
-                                        : `Select polling unit${pollingUnitQuery ? ` (${filteredPollingUnits.length} found)` : ''}`
-                                }}
-                            </option>
-                            <option
-                                v-for="unit in filteredPollingUnits"
-                                :key="unit.id"
-                                :value="unit.id"
-                            >
-                                {{ unit.name }}
-                            </option>
-                        </select>
-                        <SelectChevron />
-                    </div>
-                </div>
-                <p v-if="loadingLocations" class="text-sm text-gray-500">
-                    Loading…
-                </p>
-                <p v-if="locationError" class="text-sm text-red-600">
-                    {{ locationError }}
-                </p>
-                <p
-                    v-if="form.errors.polling_unit_id"
-                    class="text-sm text-red-600"
+            <!-- v-show keeps the chosen state, LGA and ward when the voter comes back to this step. -->
+            <div v-show="step === 'location'" class="flex flex-col gap-4">
+                <PollingUnitPicker
+                    v-model:polling-unit-id="form.polling_unit_id"
+                    :states="props.states"
+                    :error="form.errors.polling_unit_id"
+                />
+                <Link
+                    :href="play()"
+                    class="text-center text-sm font-medium text-green-700 dark:text-green-400"
                 >
-                    {{ form.errors.polling_unit_id }}
-                </p>
+                    Prefer a story? Report as a day at your polling unit
+                </Link>
             </div>
 
             <div
-                v-else-if="step === 'held' || step === 'voted'"
+                v-if="step === 'held' || step === 'voted'"
                 class="grid grid-cols-2 gap-3"
             >
                 <button
@@ -464,52 +167,12 @@ const selectClass = `${fieldClass} appearance-none pr-10`;
                 :details-error="form.errors.reason_details"
             />
 
-            <fieldset v-else-if="step === 'party'" class="flex flex-col gap-3">
-                <label
-                    v-for="party in props.parties"
-                    :key="party.id"
-                    class="flex cursor-pointer items-center gap-4 rounded-xl border border-gray-200 bg-white p-3 has-checked:border-green-700 has-checked:bg-green-50 dark:border-gray-800 dark:bg-gray-900 dark:has-checked:border-green-500 dark:has-checked:bg-green-950"
-                >
-                    <input
-                        v-model="form.party_id"
-                        type="radio"
-                        name="party_id"
-                        :value="party.id"
-                        class="sr-only"
-                    />
-                    <PartyLogo
-                        :src="party.logo_url"
-                        :alt="`${party.acronym} logo`"
-                        class="size-12 shrink-0 rounded-lg object-contain"
-                    >
-                        <span
-                            class="flex size-12 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-sm font-bold dark:bg-gray-800"
-                        >
-                            {{ party.acronym }}
-                        </span>
-                    </PartyLogo>
-                    <span class="flex min-w-0 flex-col">
-                        <span class="font-semibold">
-                            {{ party.acronym }}
-                            <span
-                                class="font-normal text-gray-600 dark:text-gray-400"
-                                >· {{ party.name }}</span
-                            >
-                        </span>
-                        <span v-if="party.candidate" class="text-sm">
-                            {{ party.candidate }}
-                            <span
-                                v-if="party.running_mate"
-                                class="text-gray-600 dark:text-gray-400"
-                                >/ {{ party.running_mate }}</span
-                            >
-                        </span>
-                    </span>
-                </label>
-                <p v-if="form.errors.party_id" class="text-sm text-red-600">
-                    {{ form.errors.party_id }}
-                </p>
-            </fieldset>
+            <PartyPicker
+                v-else-if="step === 'party'"
+                v-model:party-id="form.party_id"
+                :parties="props.parties"
+                :error="form.errors.party_id"
+            />
 
             <div v-else-if="step === 'resultSheet'" class="flex flex-col gap-4">
                 <p class="text-gray-600 dark:text-gray-400">

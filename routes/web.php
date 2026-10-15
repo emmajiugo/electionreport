@@ -21,6 +21,7 @@ Route::get('/feedback', [FeedbackController::class, 'show'])->name('feedback');
 
 Route::middleware(EnsureVinEntered::class)->group(function () {
     Route::get('/report', [ReportController::class, 'create'])->name('reports.create');
+    Route::get('/play', [ReportController::class, 'play'])->name('reports.play');
     Route::post('/reports', [ReportController::class, 'store'])->middleware('throttle:reports')->name('reports.store');
 
     Route::get('/result-sheet', [ResultSheetController::class, 'create'])->name('result-sheets.create');

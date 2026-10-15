@@ -71,8 +71,20 @@ test('party logos are sent as public URLs', function () {
         ->assertInertia(fn (Assert $page) => $page->where('parties.0.logo_url', asset('images/parties/APC.png')));
 });
 
+test('story mode gets the same election, parties and reasons as the report form', function () {
+    enterVin();
+    $formProps = $this->get(route('reports.create'))->viewData('page')['props'];
+
+    $this->get(route('reports.play'))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->component('Play/Show'));
+
+    expect($this->get(route('reports.play'))->viewData('page')['props'])->toEqual($formProps);
+});
+
 test('reporting routes cannot be reached without entering a VIN', function () {
     $this->get(route('reports.create'))->assertRedirect(route('home'));
+    $this->get(route('reports.play'))->assertRedirect(route('home'));
     $this->post(route('reports.store'), votedReport())->assertRedirect(route('home'));
 
     expect(Report::count())->toBe(0);
@@ -116,6 +128,7 @@ test('reporting the election held keeps the VIN session so the voter can add the
 
     $this->get(route('reports.submitted'))->assertInertia(fn (Assert $page) => $page->where('canAddResultSheet', true));
     $this->get(route('reports.create'))->assertRedirect(route('result-sheets.create'));
+    $this->get(route('reports.play'))->assertRedirect(route('result-sheets.create'));
 });
 
 test('the thank you page cannot be opened directly', function () {
