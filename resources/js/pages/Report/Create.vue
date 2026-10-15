@@ -3,12 +3,12 @@ import { Head, Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import AppHeader from '@/components/AppHeader.vue';
 import PartyPicker from '@/components/PartyPicker.vue';
+import ReportModeSwitch from '@/components/ReportModeSwitch.vue';
 import PollingUnitPicker from '@/components/PollingUnitPicker.vue';
 import ReasonPicker from '@/components/ReasonPicker.vue';
 import ResultSheetPicker from '@/components/ResultSheetPicker.vue';
 import { useReportFlow } from '@/lib/report-flow';
 import { home } from '@/routes';
-import { play } from '@/routes/reports';
 import type { Election, Option, Party, ReasonOption } from '@/types';
 
 const props = defineProps<{
@@ -99,6 +99,9 @@ const title = computed(() => {
                 </Link>
             </div>
 
+            <!-- Only on the first step: switching later would lose the answers given so far. -->
+            <ReportModeSwitch v-if="step === 'location'" current="form" />
+
             <h1 class="text-2xl font-semibold">{{ title }}</h1>
 
             <p
@@ -115,12 +118,6 @@ const title = computed(() => {
                     :states="props.states"
                     :error="form.errors.polling_unit_id"
                 />
-                <Link
-                    :href="play()"
-                    class="text-center text-sm font-medium text-green-700 dark:text-green-400"
-                >
-                    Prefer a story? Report as a day at your polling unit
-                </Link>
             </div>
 
             <div

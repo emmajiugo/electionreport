@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3';
+import { Head } from '@inertiajs/vue3';
 import {
     computed,
     defineAsyncComponent,
@@ -9,13 +9,13 @@ import {
     watch,
 } from 'vue';
 import AppHeader from '@/components/AppHeader.vue';
+import ReportModeSwitch from '@/components/ReportModeSwitch.vue';
 import PartyPicker from '@/components/PartyPicker.vue';
 import PollingUnitPicker from '@/components/PollingUnitPicker.vue';
 import ReasonPicker from '@/components/ReasonPicker.vue';
 import ResultSheetPicker from '@/components/ResultSheetPicker.vue';
 import { scenes } from '@/game/script';
 import { useReportFlow } from '@/lib/report-flow';
-import { create as reportForm } from '@/routes/reports';
 import type { Election, Option, Party, ReasonOption } from '@/types';
 
 const props = defineProps<{
@@ -135,6 +135,9 @@ const skyClass = computed(() => {
             class="mx-auto flex w-full max-w-md grow flex-col gap-4 p-4"
             @submit.prevent="next"
         >
+            <!-- Only on the first step: switching later would lose the answers given so far. -->
+            <ReportModeSwitch v-if="step === 'location'" current="story" />
+
             <section
                 class="relative h-40 shrink-0 overflow-hidden rounded-2xl bg-linear-to-b transition-colors duration-700 sm:h-56"
                 :class="skyClass"
@@ -315,12 +318,6 @@ const skyClass = computed(() => {
                                 : 'Continue'
                     }}
                 </button>
-                <Link
-                    :href="reportForm()"
-                    class="text-center text-sm font-medium text-green-700 dark:text-green-400"
-                >
-                    Use the plain form instead
-                </Link>
             </div>
         </form>
     </div>
