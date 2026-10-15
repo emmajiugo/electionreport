@@ -50,7 +50,8 @@ class ResultSheetController extends Controller
     {
         /** @var Report $report */
         $report = $request->report();
-        $image = ResultSheetImage::fromUpload($request->file('result_sheet'));
+        /** @var ResultSheetImage $image */
+        $image = ResultSheetImage::fromRequest($request);
         $path = $image->store($report->election_id);
 
         try {

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\AppMode;
+use App\Support\ResultSheetImage;
 use Database\Factories\ResultSheetFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -115,7 +116,9 @@ class ResultSheet extends Model
 
     public function url(): string
     {
-        return Storage::disk(self::disk())->url($this->path);
+        return $this->path === ResultSheetImage::SAMPLE_PATH
+            ? asset($this->path)
+            : Storage::disk(self::disk())->url($this->path);
     }
 
     public static function disk(): string

@@ -90,6 +90,18 @@ test('a photo also uploaded for another polling unit is flagged', function () {
     assertFlags(0, [ResultSheetFlag::ReusedImage]);
 });
 
+test('practice sheets are never flagged as reused, since they all share the sample image', function () {
+    config(['electionreport.mode' => 'test']);
+    // The voter's report from beforeEach is in the live table; the practice page needs one in the test table.
+    Report::factory()->for($this->election)->for($this->pollingUnit)->create([
+        'vin_hash' => VoterIdentificationNumber::fromInput(FLAGS_VIN)->hash(),
+    ]);
+    sheetAtFlaggedUnit(['image_hash' => 'cccccccccccccccc']);
+    sheetAtFlaggedUnit(['image_hash' => 'cccccccccccccccc'], PollingUnit::factory()->create());
+
+    assertFlags(0, []);
+});
+
 test('the same photo uploaded twice at one polling unit is not flagged as reused', function () {
     sheetAtFlaggedUnit(['image_hash' => 'bbbbbbbbbbbbbbbb']);
     sheetAtFlaggedUnit(['image_hash' => 'bbbbbbbbbbbbbbbb']);

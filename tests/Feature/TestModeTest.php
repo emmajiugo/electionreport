@@ -6,6 +6,7 @@ use App\Models\Party;
 use App\Models\PollingUnit;
 use App\Models\Report;
 use App\Rules\Turnstile;
+use App\Support\ResultSheetImage;
 use App\Support\VoterIdentificationNumber;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -105,15 +106,64 @@ test('each test table matches its live table', function (string $live) {
     expect($columns("test_{$live}"))->toBe($columns($live));
 })->with(['reports', 'result_sheets', 'result_sheet_reviews']);
 
-test('result sheets uploaded in test mode are kept apart from live ones', function () {
+test('a practice result sheet saves the sample in place of the photo, in the test table', function () {
+    Storage::fake('public');
+    useMode('test');
+    submitReportAs(TESTER_VIN);
+
+    // The photo is sent anyway, as an old or tampered client might, to show it is never stored.
+    $this->post(route('result-sheets.store'), [
+        'sample_result_sheet' => true,
+        'result_sheet' => UploadedFile::fake()->image('sheet.jpg', 800, 600),
+    ])->assertRedirect(route('result-sheets.create'));
+
+    expect(DB::table('test_result_sheets')->count())->toBe(1)
+        ->and(DB::table('result_sheets')->count())->toBe(0)
+        ->and(DB::table('test_result_sheets')->value('path'))->toBe(ResultSheetImage::SAMPLE_PATH)
+        ->and(Storage::disk('public')->allFiles())->toBe([]);
+
+    $this->get(route('result-sheets.create'))->assertInertia(fn (Assert $page) => $page
+        ->where('sheets.0.url', asset(ResultSheetImage::SAMPLE_PATH))
+        ->where('hasUploaded', true));
+});
+
+test('a practice upload without the sample flag is rejected', function () {
     Storage::fake('public');
     useMode('test');
     submitReportAs(TESTER_VIN);
 
     $this->post(route('result-sheets.store'), ['result_sheet' => UploadedFile::fake()->image('sheet.jpg', 800, 600)])
-        ->assertRedirect(route('result-sheets.create'));
+        ->assertSessionHasErrors('sample_result_sheet');
 
-    expect(DB::table('test_result_sheets')->count())->toBe(1)
-        ->and(DB::table('result_sheets')->count())->toBe(0)
-        ->and(DB::table('test_result_sheets')->value('path'))->toStartWith('test/result-sheets/');
+    expect(DB::table('test_result_sheets')->count())->toBe(0);
+});
+
+test('a practice report can attach the sample result sheet without uploading the photo', function () {
+    Storage::fake('public');
+    useMode('test');
+    $hashed = VoterIdentificationNumber::fromInput(TESTER_VIN);
+
+    $this->withSession([EnsureVinEntered::SESSION_KEY => ['hash' => $hashed->hash(), 'masked' => $hashed->masked()]])
+        ->post(route('reports.store'), [
+            'polling_unit_id' => $this->pollingUnit->id,
+            'election_held' => true,
+            'voted' => true,
+            'party_id' => $this->party->id,
+            'sample_result_sheet' => true,
+            'result_sheet' => UploadedFile::fake()->image('sheet.jpg', 800, 600),
+        ])
+        ->assertRedirect(route('reports.submitted'));
+
+    expect(DB::table('test_result_sheets')->value('path'))->toBe(ResultSheetImage::SAMPLE_PATH)
+        ->and(Storage::disk('public')->allFiles())->toBe([]);
+});
+
+test('the sample result sheet cannot be sent once the app is live', function () {
+    useMode('live');
+    submitReportAs(TESTER_VIN);
+
+    $this->post(route('result-sheets.store'), ['sample_result_sheet' => true])
+        ->assertSessionHasErrors(['result_sheet', 'sample_result_sheet']);
+
+    expect(DB::table('result_sheets')->count())->toBe(0);
 });

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { usePage } from '@inertiajs/vue3';
 import { onBeforeUnmount, ref, watch } from 'vue';
 import { shrinkPhoto } from '@/lib/photo';
 
@@ -13,6 +14,8 @@ const emit = defineEmits<{
 
 const photo = defineModel<File | null>('photo', { required: true });
 const preparing = defineModel<boolean>('preparing', { default: false });
+
+const practice = usePage().props.mode === 'test';
 
 const previewUrl = ref<string | null>(null);
 const photoError = ref<string | null>(null);
@@ -87,6 +90,14 @@ async function choosePhoto(event: Event): Promise<void> {
                 @change="choosePhoto"
             />
         </label>
+
+        <p
+            v-if="practice"
+            class="rounded-xl bg-yellow-50 p-3 text-sm text-yellow-900 dark:bg-yellow-950 dark:text-yellow-100"
+        >
+            Practice mode: your photo stays on your phone and is not uploaded. A
+            sample result sheet is saved in its place.
+        </p>
 
         <p
             v-if="photoError || error"

@@ -54,7 +54,9 @@ class StoreReportRequest extends FormRequest
                 'string',
                 'max:500',
             ],
-            'result_sheet' => $electionHeld ? ['nullable', ResultSheetImage::rule()] : ['prohibited'],
+            ...$electionHeld
+                ? ResultSheetImage::rules(required: false)
+                : ['result_sheet' => ['prohibited'], 'sample_result_sheet' => ['prohibited']],
             // Honeypot: invisible to people, bots tend to fill every field.
             'website' => ['prohibited'],
         ];

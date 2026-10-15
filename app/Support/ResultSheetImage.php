@@ -5,6 +5,7 @@ namespace App\Support;
 use App\Enums\AppMode;
 use App\Models\ResultSheet;
 use GdImage;
+use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -18,13 +19,36 @@ use RuntimeException;
  */
 final readonly class ResultSheetImage
 {
+    /**
+     * A public file, not a bucket path: practice sheets all point at this one sample image.
+     */
+    public const string SAMPLE_PATH = 'images/sample-result-sheet.svg';
+
+    private const string SAMPLE_HASH = '0000000000000000';
+
     private const int JPEG_QUALITY = 82;
 
     private const int MAX_KILOBYTES = 2048;
 
     private const int MAX_PIXELS_PER_SIDE = 2000;
 
-    private function __construct(public string $jpeg, public string $hash) {}
+    private function __construct(public string $jpeg, public string $hash, private bool $isSample = false) {}
+
+    /**
+     * In test mode the voter's photo never leaves their phone, so practice can't fill the bucket
+     * before election day. The browser sends only `sample_result_sheet`, and a sample sheet stands
+     * in for the photo so reviews, figures and standings can still be practised.
+     */
+    public static function fromRequest(Request $request): ?self
+    {
+        if (AppMode::current()->isTest()) {
+            return $request->boolean('sample_result_sheet') ? new self('', self::SAMPLE_HASH, isSample: true) : null;
+        }
+
+        $file = $request->file('result_sheet');
+
+        return $file instanceof UploadedFile ? self::fromUpload($file) : null;
+    }
 
     public static function fromUpload(UploadedFile $file): self
     {
@@ -44,10 +68,25 @@ final readonly class ResultSheetImage
     }
 
     /**
+     * @return array<string, array<mixed>>
+     */
+    public static function rules(bool $required): array
+    {
+        if (AppMode::current()->isTest()) {
+            return ['sample_result_sheet' => [$required ? 'accepted' : 'boolean']];
+        }
+
+        return [
+            'result_sheet' => [$required ? 'required' : 'nullable', self::rule()],
+            'sample_result_sheet' => ['prohibited'],
+        ];
+    }
+
+    /**
      * The browser shrinks photos to about 1600px before upload; these limits leave headroom while
      * keeping a hostile upload from exhausting memory when it is decoded.
      */
-    public static function rule(): File
+    private static function rule(): File
     {
         return File::image()
             ->types(['jpg', 'jpeg', 'png', 'webp'])
@@ -69,11 +108,14 @@ final readonly class ResultSheetImage
     }
 
     /**
-     * Saves the photo publicly and returns its path. Test-mode photos get their own prefix so they
-     * can be cleared without touching the real election's.
+     * Saves the photo publicly and returns its path. The sample is already public, so it is never saved.
      */
     public function store(int $electionId): string
     {
+        if ($this->isSample) {
+            return self::SAMPLE_PATH;
+        }
+
         $path = AppMode::current()->value."/result-sheets/{$electionId}/".Str::uuid().'.jpg';
 
         // Visibility comes from the disk, never per file: Laravel Cloud buckets (Cloudflare R2) reject per-object ACLs.

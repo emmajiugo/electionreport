@@ -29,9 +29,7 @@ class StoreResultSheetRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
-            'result_sheet' => ['required', ResultSheetImage::rule()],
-        ];
+        return ResultSheetImage::rules(required: true);
     }
 
     /**

@@ -1,4 +1,4 @@
-import { useForm } from '@inertiajs/vue3';
+import { useForm, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import { store } from '@/routes/reports';
 
@@ -24,6 +24,7 @@ const stepForField: Record<string, ReportStep> = {
  * both always send the same report.
  */
 export function useReportFlow() {
+    const practice = usePage().props.mode === 'test';
     const step = ref<ReportStep>('location');
     const history = ref<ReportStep[]>([]);
 
@@ -114,7 +115,9 @@ export function useReportFlow() {
             party_id: voted ? data.party_id : null,
             reason_details:
                 !voted && reason === 'other' ? data.reason_details : null,
-            result_sheet: held ? data.result_sheet : null,
+            // Practice photos stay on the phone; the server saves a sample sheet instead.
+            result_sheet: held && !practice ? data.result_sheet : null,
+            sample_result_sheet: held && practice && data.result_sheet !== null,
         })).post(store.url(), {
             onError: (errors) => {
                 const field = Object.keys(errors).find(

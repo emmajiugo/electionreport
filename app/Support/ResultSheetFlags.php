@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Enums\AppMode;
 use App\Enums\ResultSheetFlag;
 use App\Enums\ReviewVerdict;
 use App\Models\Election;
@@ -37,7 +38,8 @@ final class ResultSheetFlags
             return [];
         }
 
-        $reusedHashes = self::hashesUsedAtOtherPollingUnits($election, $sheets);
+        // Every practice sheet is the same sample image, so in test mode they would all look reused.
+        $reusedHashes = AppMode::current()->isTest() ? [] : self::hashesUsedAtOtherPollingUnits($election, $sheets);
         $pollsClose = CarbonImmutable::parse(
             $election->held_on->toDateString().' '.config('electionreport.results_not_before'),
             self::NIGERIA_TIMEZONE,

@@ -79,9 +79,9 @@ Voters can upload a photo of their polling unit's result sheet (Form EC8A). Anyo
     - **Default disk:** leave this off. The app has no other files to store.
     - **Jurisdiction:** Automatic. **Location hint:** Western Europe, the option closest to Nigeria. Neither can change after creation.
 3. Redeploy the environment so the bucket's credentials take effect.
-4. Check the setup in test mode. Report from a polling unit as a tester, upload a result sheet photo, and open it from the result sheet page. The photo's address should be the bucket's public URL, shown on the bucket's settings page. If it starts with your `APP_URL` followed by `/storage`, the bucket is not attached with the disk name `public`.
+4. Check the setup in live mode, on staging or before the election opens, because test mode never uploads photos. Report from a polling unit, upload a result sheet photo, and open it from the result sheet page. The photo's address should be the bucket's public URL, shown on the bucket's settings page. If it starts with your `APP_URL` followed by `/storage`, the bucket is not attached with the disk name `public`.
 
-Photos are stored once, never changed, and sent with a one-year cache header, so a browser that has shown a photo does not download it again. Photos uploaded in test mode go under a `test/` prefix and live ones under `live/`. Before election day, you can delete the `test/` folder from the bucket, for example with Cyberduck as the Laravel Cloud object storage docs describe, without touching anything live.
+Photos are stored once, never changed, and sent with a one-year cache header, so a browser that has shown a photo does not download it again. In test mode the photo never leaves the voter's phone: the app saves a built-in sample sheet in its place, so practice can't fill the bucket and result sheets work in test mode without a bucket at all. Live photos go under a `live/` prefix. Photos from before this change are under `test/`, and you can delete that folder, for example with Cyberduck as the Laravel Cloud object storage docs describe, without touching anything live.
 
 ## Environment variables
 

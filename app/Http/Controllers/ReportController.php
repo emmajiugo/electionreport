@@ -68,7 +68,7 @@ class ReportController extends Controller
         /** @var Election $election */
         $election = $request->election();
         $ipHash = VoterIdentificationNumber::hmac((string) $request->ip());
-        $image = $request->hasFile('result_sheet') ? ResultSheetImage::fromUpload($request->file('result_sheet')) : null;
+        $image = ResultSheetImage::fromRequest($request);
         $path = $image?->store($election->id);
 
         try {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import AppHeader from '@/components/AppHeader.vue';
 import ResultSheetCard from '@/components/ResultSheetCard.vue';
@@ -35,6 +35,7 @@ const form = useForm({
 });
 
 const preparing = ref(false);
+const practice = usePage().props.mode === 'test';
 
 const reviewForm = useForm({
     verdict: null as ReviewVerdict | null,
@@ -46,7 +47,10 @@ function review(sheet: ResultSheet, verdict: ReviewVerdict): void {
 }
 
 function upload(): void {
-    form.post(store.url(), {
+    // Practice photos stay on the phone; the server saves a sample sheet instead.
+    form.transform((data) =>
+        practice ? { sample_result_sheet: true } : data,
+    ).post(store.url(), {
         onSuccess: () => form.reset(),
     });
 }
@@ -150,7 +154,11 @@ function upload(): void {
                 v-if="hasUploaded"
                 class="rounded-xl bg-green-50 p-4 text-green-800 dark:bg-green-950 dark:text-green-200"
             >
-                Thank you. Your photo of the result sheet is uploaded.
+                {{
+                    practice
+                        ? 'Thank you. In practice mode, a sample result sheet stands in for your photo.'
+                        : 'Thank you. Your photo of the result sheet is uploaded.'
+                }}
             </p>
 
             <ResultSheetFiguresForm
