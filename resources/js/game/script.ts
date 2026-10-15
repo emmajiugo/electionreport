@@ -1,3 +1,4 @@
+import type { Crowd } from '@/game/diorama';
 import type { ReportStep } from '@/lib/report-flow';
 
 export type Scene = {
@@ -5,6 +6,9 @@ export type Scene = {
     time: string;
     /** Minutes since midnight, so the sun can move across the sky. */
     minutes: number;
+    /** Point in the diorama the camera settles on. */
+    focus: [number, number, number];
+    crowd: Crowd;
     question: string;
     narration: string;
     bubbles: { speaker: string; line: string }[];
@@ -20,6 +24,8 @@ export const scenes: Record<ReportStep, Scene> = {
     location: {
         time: '6:30 am',
         minutes: 390,
+        focus: [-4, 0, 6],
+        crowd: 'queue',
         question: 'Where is your polling unit?',
         narration:
             'Election morning. The roads are empty because of the movement restriction, and a neighbour is already sweeping the compound. Before you set out, tell us which polling unit you are going to.',
@@ -31,6 +37,8 @@ export const scenes: Record<ReportStep, Scene> = {
     held: {
         time: '8:00 am',
         minutes: 480,
+        focus: [0, 0, 2],
+        crowd: 'queue',
         question: 'Did the election hold at your polling unit?',
         narration:
             'You reach the school gate. People hold their PVCs, plastic chairs are lined up, and someone is checking the list taped to the wall.',
@@ -46,6 +54,8 @@ export const scenes: Record<ReportStep, Scene> = {
     notHeldReason: {
         time: '11:00 am',
         minutes: 660,
+        focus: [1, 0, -1],
+        crowd: 'gone',
         question: 'Why did the election not hold?',
         narration:
             'The chairs are empty and the canopy moves in the wind. Tell us what happened so it is on record.',
@@ -60,6 +70,8 @@ export const scenes: Record<ReportStep, Scene> = {
     voted: {
         time: '10:00 am',
         minutes: 600,
+        focus: [1, 0, 3.6],
+        crowd: 'queue',
         question: 'Did you vote?',
         narration:
             'The queue moves slowly. Someone sells pure water and gala by the gate, and the generator hums behind the classroom.',
@@ -81,6 +93,8 @@ export const scenes: Record<ReportStep, Scene> = {
     notVotedReason: {
         time: '1:00 pm',
         minutes: 780,
+        focus: [4, 0, 2],
+        crowd: 'queue',
         question: 'Why were you unable to vote?',
         narration:
             'That is frustrating. Tell us what stopped you, so the problem is counted.',
@@ -95,6 +109,8 @@ export const scenes: Record<ReportStep, Scene> = {
     party: {
         time: '12:00 pm',
         minutes: 720,
+        focus: [1, 0.5, -1],
+        crowd: 'queue',
         question: 'Which party did you vote for?',
         narration:
             'Behind the cardboard screen it is just you and the ballot paper. Only you see this answer. It never appears on your share card.',
@@ -103,6 +119,8 @@ export const scenes: Record<ReportStep, Scene> = {
     resultSheet: {
         time: '5:30 pm',
         minutes: 1050,
+        focus: [-4.5, 1, -2],
+        crowd: 'atWall',
         question: 'Is the result sheet posted?',
         narration:
             'Counting is done. If the officials have posted the result sheet (Form EC8A) on the wall, take a clear photo of the whole sheet.',

@@ -8,6 +8,27 @@
         Instrument Sans, ui-sans-serif, system-ui, sans-serif,
         'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
         'Noto Color Emoji';
+
+    /* Story mode: an ink stamp landing on the scene when an answer is locked in. */
+    --animate-stamp: stamp 900ms ease-out forwards;
+
+    @keyframes stamp {
+        0% {
+            opacity: 0;
+            transform: translate(-50%, -50%) rotate(-12deg) scale(2.2);
+        }
+        25% {
+            opacity: 1;
+            transform: translate(-50%, -50%) rotate(-12deg) scale(1);
+        }
+        75% {
+            opacity: 1;
+        }
+        100% {
+            opacity: 0;
+            transform: translate(-50%, -50%) rotate(-12deg) scale(1);
+        }
+    }
 }
 
 /* Chart tokens. Sequential ramp is one hue; dark mode has its own steps where more is lighter. */

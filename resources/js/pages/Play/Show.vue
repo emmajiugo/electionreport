@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
-import { computed } from 'vue';
+import {
+    computed,
+    defineAsyncComponent,
+    onBeforeUnmount,
+    onMounted,
+    ref,
+    watch,
+} from 'vue';
 import AppHeader from '@/components/AppHeader.vue';
 import PartyPicker from '@/components/PartyPicker.vue';
 import PollingUnitPicker from '@/components/PollingUnitPicker.vue';
@@ -35,6 +42,43 @@ const {
 } = useReportFlow();
 
 const scene = computed(() => scenes[step.value]);
+
+// three.js is only downloaded once we know this phone can draw it.
+const Diorama = defineAsyncComponent(() => import('@/game/Diorama.vue'));
+const canRender3d = ref(false);
+
+onMounted(() => {
+    const connection = (
+        navigator as Navigator & { connection?: { saveData?: boolean } }
+    ).connection;
+    const canvas = document.createElement('canvas');
+
+    canRender3d.value =
+        connection?.saveData !== true &&
+        (canvas.getContext('webgl2') ?? canvas.getContext('webgl')) !== null;
+});
+
+// Each answer the voter moves on from gets stamped, with a short buzz on phones that support it.
+const stamping = ref(0);
+let stampTimer: ReturnType<typeof setTimeout> | undefined;
+
+watch(
+    () => history.value.length,
+    (length, previous) => {
+        if (length <= previous) {
+            return;
+        }
+
+        stamping.value++;
+        clearTimeout(stampTimer);
+        stampTimer = setTimeout(() => (stamping.value = 0), 900);
+        navigator.vibrate?.(15);
+    },
+);
+
+onBeforeUnmount(() => {
+    clearTimeout(stampTimer);
+});
 
 const sunrise = 6 * 60;
 const sunset = 19 * 60;
@@ -88,40 +132,68 @@ const skyClass = computed(() => {
 
         <form
             v-else
-            class="mx-auto flex w-full max-w-md grow flex-col gap-5 p-4"
+            class="mx-auto flex w-full max-w-md grow flex-col gap-4 p-4"
             @submit.prevent="next"
         >
             <section
-                class="relative h-36 overflow-hidden rounded-2xl bg-linear-to-b transition-colors duration-700"
+                class="relative h-40 shrink-0 overflow-hidden rounded-2xl bg-linear-to-b transition-colors duration-700 sm:h-56"
                 :class="skyClass"
-                aria-hidden="true"
             >
-                <span
-                    class="absolute size-10 -translate-x-1/2 rounded-full bg-yellow-300 shadow-[0_0_40px_10px] shadow-yellow-200/70 transition-all duration-700 ease-out"
-                    :style="sunStyle"
-                />
-                <span class="absolute inset-x-0 bottom-0 h-8 bg-amber-800/80" />
-                <span
-                    class="absolute right-6 bottom-8 h-10 w-24 rounded-t-md bg-white/90"
-                />
-                <span
-                    class="absolute right-4 bottom-18 h-3 w-28 bg-green-700/90"
-                />
-                <span
-                    class="absolute top-3 left-3 rounded-full bg-black/40 px-3 py-1 text-sm font-semibold text-white tabular-nums"
-                >
-                    {{ scene.time }}
-                </span>
+                <div class="absolute inset-0" aria-hidden="true">
+                    <span
+                        class="absolute size-10 -translate-x-1/2 rounded-full bg-yellow-300 shadow-[0_0_40px_10px] shadow-yellow-200/70 transition-all duration-700 ease-out"
+                        :style="sunStyle"
+                    />
+                    <span
+                        class="absolute inset-x-0 bottom-0 h-8 bg-amber-800/80"
+                    />
+                    <span
+                        class="absolute right-6 bottom-8 h-10 w-24 rounded-t-md bg-white/90"
+                    />
+                    <span
+                        class="absolute right-4 bottom-18 h-3 w-28 bg-green-700/90"
+                    />
+                    <Diorama
+                        v-if="canRender3d"
+                        class="absolute inset-0"
+                        :minutes="scene.minutes"
+                        :crowd="scene.crowd"
+                        :focus="scene.focus"
+                    />
+                    <span
+                        class="absolute top-3 left-3 rounded-full bg-black/40 px-3 py-1 text-sm font-semibold text-white tabular-nums"
+                    >
+                        {{ scene.time }}
+                    </span>
+                    <span
+                        v-if="stamping"
+                        :key="stamping"
+                        class="absolute top-1/2 left-1/2 animate-stamp rounded-lg border-4 border-green-700 bg-white/80 px-4 py-1 text-2xl font-black tracking-widest text-green-700 uppercase motion-reduce:hidden"
+                    >
+                        Noted
+                    </span>
+                </div>
             </section>
 
             <p class="text-gray-700 dark:text-gray-300">
                 {{ scene.narration }}
             </p>
 
-            <ul v-if="scene.bubbles.length" class="flex flex-col gap-2">
+            <!-- Bystanders speak one after another, as if the scene is playing out. Keyed by step so the
+                 previous scene's lines vanish at once instead of waiting out their delays. -->
+            <TransitionGroup
+                v-if="scene.bubbles.length"
+                :key="step"
+                tag="ul"
+                appear
+                class="flex flex-col gap-2"
+                enter-from-class="translate-y-2 opacity-0"
+                enter-active-class="transition duration-300 ease-out motion-reduce:transition-none"
+            >
                 <li
-                    v-for="bubble in scene.bubbles"
-                    :key="bubble.line"
+                    v-for="(bubble, index) in scene.bubbles"
+                    :key="index"
+                    :style="{ transitionDelay: `${300 + index * 700}ms` }"
                     class="w-fit max-w-[85%] rounded-2xl rounded-bl-sm bg-white px-4 py-2 text-sm shadow-sm odd:self-start even:self-end even:rounded-br-sm even:rounded-bl-2xl dark:bg-gray-900"
                 >
                     <span class="block text-xs text-gray-500">
@@ -129,7 +201,7 @@ const skyClass = computed(() => {
                     </span>
                     {{ bubble.line }}
                 </li>
-            </ul>
+            </TransitionGroup>
 
             <p
                 v-if="scene.safety"
