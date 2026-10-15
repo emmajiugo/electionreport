@@ -2,11 +2,14 @@
 import { Head, Link } from '@inertiajs/vue3';
 import AppHeader from '@/components/AppHeader.vue';
 import NotOfficialNotice from '@/components/NotOfficialNotice.vue';
+import ShareCard from '@/components/ShareCard.vue';
+import type { ShareCardDetails } from '@/lib/share-card';
 import { results } from '@/routes';
 import { create as addResultSheet } from '@/routes/result-sheets';
 
 defineProps<{
     canAddResultSheet: boolean;
+    shareCard: ShareCardDetails | null;
 }>();
 </script>
 
@@ -37,6 +40,7 @@ defineProps<{
                 We've recorded your report. Share ElectionReport with other
                 voters so more polling units get monitored.
             </p>
+            <ShareCard v-if="shareCard" :card="shareCard" class="text-left" />
             <NotOfficialNotice class="w-full max-w-md text-left" />
             <div
                 v-if="canAddResultSheet"

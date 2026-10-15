@@ -131,6 +131,27 @@ test('reporting the election held keeps the VIN session so the voter can add the
     $this->get(route('reports.play'))->assertRedirect(route('result-sheets.create'));
 });
 
+test('the thank you page offers a share card that names only the LGA, state and election', function (array $report) {
+    enterVin();
+    $lga = $this->pollingUnit->ward->lga;
+
+    $this->post(route('reports.store'), $report)->assertRedirect(route('reports.submitted'));
+
+    $this->get(route('reports.submitted'))->assertInertia(fn (Assert $page) => $page
+        ->where('shareCard', [
+            'lga' => $lga->name,
+            'state' => $lga->state->name,
+            'election' => $this->election->name,
+        ]));
+})->with([
+    'voted' => [fn () => votedReport()],
+    'election did not hold' => [fn () => [
+        'polling_unit_id' => test()->pollingUnit->id,
+        'election_held' => false,
+        'not_held_reason' => ElectionNotHeldReason::Postponed->value,
+    ]],
+]);
+
 test('the thank you page cannot be opened directly', function () {
     $this->get(route('reports.submitted'))->assertRedirect(route('home'));
 });

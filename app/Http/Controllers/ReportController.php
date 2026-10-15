@@ -8,6 +8,7 @@ use App\Http\Middleware\EnsureVinEntered;
 use App\Http\Requests\StoreReportRequest;
 use App\Models\Election;
 use App\Models\Party;
+use App\Models\PollingUnit;
 use App\Models\ResultSheet;
 use App\Models\State;
 use App\Support\ResultSheetImage;
@@ -112,6 +113,14 @@ class ReportController extends Controller
 
         $request->session()->flash('report_submitted', true);
 
+        // Only where and in which election: a shared card must never reveal how someone voted.
+        $lga = PollingUnit::with('ward.lga.state')->findOrFail($request->integer('polling_unit_id'))->ward->lga;
+        $request->session()->flash('share_card', [
+            'lga' => $lga->name,
+            'state' => $lga->state->name,
+            'election' => $election->name,
+        ]);
+
         return to_route('reports.submitted');
     }
 
@@ -127,6 +136,7 @@ class ReportController extends Controller
 
         return Inertia::render('Report/Submitted', [
             'canAddResultSheet' => $report !== null && $report->resultSheet()->doesntExist(),
+            'shareCard' => $request->session()->get('share_card'),
         ]);
     }
 }
