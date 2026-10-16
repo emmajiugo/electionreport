@@ -100,9 +100,10 @@ function submit(): void {
                     </svg>
                 </div>
                 <p class="text-gray-600 dark:text-gray-400">
-                    Tell us what happened at your polling unit. We store your
-                    VIN only as a one-way hash, and we use it to make sure each
-                    voter reports once.
+                    Tell us what happened at your polling unit. We never save
+                    your VIN. We turn it into a scrambled code that nobody can
+                    read or turn back into your VIN, and we use that code only
+                    to make sure each voter reports once.
                 </p>
             </div>
 
