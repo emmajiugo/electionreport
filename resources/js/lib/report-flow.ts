@@ -117,7 +117,12 @@ export function useReportFlow() {
                 !voted && reason === 'other' ? data.reason_details : null,
             // Practice photos stay on the phone; the server saves a sample sheet instead.
             result_sheet: held && !practice ? data.result_sheet : null,
-            sample_result_sheet: held && practice && data.result_sheet !== null,
+            // Omitted rather than false: the server rule is `prohibited` in live mode and when the
+            // election didn't hold, and Laravel treats false as a present value.
+            sample_result_sheet:
+                held && practice && data.result_sheet !== null
+                    ? true
+                    : undefined,
         })).post(store.url(), {
             onError: (errors) => {
                 const field = Object.keys(errors).find(
