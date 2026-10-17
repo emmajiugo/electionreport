@@ -198,7 +198,7 @@ Leave Laravel Cloud's edge rate limiting off, or set it far above 100 requests a
 Run a load test against staging at least a week before the election, with the same compute and database settings as production.
 
 1. Seed staging with `DemoReportSeeder` so the dashboard has data to aggregate.
-2. Use a load-testing tool such as [k6](https://k6.io/) to replay the voter flow: `GET /`, `POST /vin`, `GET /report`, the three location lookups, and `POST /reports`. Mix in `GET /results` traffic. Staging's always-pass Turnstile keys let scripted requests through the VIN step.
+2. Use a load-testing tool such as [k6](https://k6.io/) to replay the voter flow: `GET /`, `GET /vin`, `POST /vin`, `GET /report`, the three location lookups, and `POST /reports`. Mix in `GET /results` traffic. Staging's always-pass Turnstile keys let scripted requests through the VIN step.
 3. Spread the test across several source IPs, or raise the `reports` and `vin` limits in `AppServiceProvider` for the test. Otherwise the per-IP rate limits cap it.
 4. Watch the replica count, the Postgres compute units, and response times in the dashboard. Raise the production minimums until the peak you expect runs without errors.
 
@@ -214,7 +214,7 @@ A week before:
 
 On the day:
 
-- Open reporting with the tinker command above and check that `/` shows the VIN form.
+- Open reporting with the tinker command above and check that `/` shows the **Report your polling unit** button and that `/vin` shows the VIN form.
 - Keep the **Logs** tab open. `Turnstile verification unreachable` warnings mean Cloudflare was down and VINs went through unchecked. A burst of `Turnstile verification rejected` lines usually means bots are trying the form.
 - If a flood of bot traffic gets past Turnstile, switch on Laravel Cloud's **Under Attack Mode**. It adds a browser check for every visitor and turns itself off after 24 hours.
 

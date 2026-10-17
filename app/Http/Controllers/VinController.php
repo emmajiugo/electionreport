@@ -23,12 +23,21 @@ class VinController extends Controller
     {
         $vin = $request->vin();
 
+        // A voter whose election held may come back to add the result sheet. Two voters can share a
+        // partial VIN, so only a single match is taken as theirs; the sheet page lets them back out.
+        $returningReportIds = $request->election()?->reports()
+            ->where('vin_hash', $vin->hash())
+            ->where('election_held', true)
+            ->limit(2)
+            ->pluck('id');
+
         $request->session()->put(EnsureVinEntered::SESSION_KEY, [
             'hash' => $vin->hash(),
             'masked' => $vin->masked(),
+            'report_id' => $returningReportIds?->count() === 1 ? $returningReportIds->first() : null,
         ]);
 
-        if ($request->election()?->hasReportFrom($vin->hash())) {
+        if ($returningReportIds?->count() === 1) {
             return to_route('result-sheets.create');
         }
 

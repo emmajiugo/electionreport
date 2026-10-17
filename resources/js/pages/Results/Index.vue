@@ -8,15 +8,10 @@ import BarList from '@/components/results/BarList.vue';
 import StatTile from '@/components/results/StatTile.vue';
 import StateMap from '@/components/results/StateMap.vue';
 import { formatNumber, formatPercent, percent } from '@/lib/format';
-import { home, results as resultsRoute } from '@/routes';
-import { resultSheets } from '@/routes/polling-units';
-import type {
-    AreaResult,
-    Election,
-    MapMetric,
-    Results,
-    SheetUnit,
-} from '@/types';
+import { results as resultsRoute } from '@/routes';
+import { index as resultSheetsIndex } from '@/routes/result-sheets';
+import { create as enterVin } from '@/routes/vin';
+import type { AreaResult, Election, MapMetric, Results } from '@/types';
 
 const props = defineProps<{
     election: Election | null;
@@ -112,15 +107,6 @@ const updatedAt = computed(() =>
         : null,
 );
 
-const sheetStatusClass: Record<SheetUnit['status'], string> = {
-    contested:
-        'bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-200',
-    corroborated:
-        'bg-green-50 text-green-800 dark:bg-green-950 dark:text-green-200',
-    unconfirmed:
-        'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
-};
-
 function scopeTo(stateId: number | null): void {
     router.get(
         resultsRoute.url(stateId ? { query: { state: stateId } } : undefined),
@@ -190,7 +176,7 @@ function selectFromMap(state: AreaResult): void {
                     <SelectChevron />
                 </div>
                 <Link
-                    :href="home()"
+                    :href="enterVin()"
                     class="flex h-12 items-center justify-center rounded-xl border border-green-700 bg-green-700 px-4 font-semibold text-white sm:ml-auto"
                 >
                     Report your polling unit
@@ -298,55 +284,18 @@ function selectFromMap(state: AreaResult): void {
                         detail="polling units"
                     />
                 </div>
-                <ul
-                    v-if="selectedState && results.sheets.units.length"
-                    class="flex flex-col divide-y divide-gray-100 dark:divide-gray-800"
-                >
-                    <li v-for="unit in results.sheets.units" :key="unit.id">
-                        <Link
-                            :href="resultSheets(unit.id)"
-                            class="flex items-center justify-between gap-3 py-3"
-                        >
-                            <span class="flex min-w-0 flex-col">
-                                <span
-                                    class="truncate font-medium text-green-700 dark:text-green-400"
-                                    >{{ unit.name }}</span
-                                >
-                                <span
-                                    class="text-sm text-gray-600 dark:text-gray-400"
-                                    >{{ unit.code }} · {{ unit.lga }} ·
-                                    {{ unit.sheets }}
-                                    {{
-                                        unit.sheets === 1 ? 'sheet' : 'sheets'
-                                    }}</span
-                                >
-                            </span>
-                            <span
-                                class="shrink-0 rounded-lg px-2 py-1 text-xs"
-                                :class="sheetStatusClass[unit.status]"
-                                >{{ unit.status_label }}</span
-                            >
-                        </Link>
-                    </li>
-                </ul>
-                <p
-                    v-if="
-                        selectedState &&
-                        results.sheets.units.length <
-                            results.sheets.polling_units
+                <Link
+                    :href="
+                        resultSheetsIndex(
+                            selectedState
+                                ? { query: { state: selectedState.id } }
+                                : undefined,
+                        )
                     "
-                    class="text-sm text-gray-600 dark:text-gray-400"
+                    class="flex h-12 items-center justify-center rounded-xl border border-green-700 px-4 font-semibold text-green-700 sm:self-start dark:border-green-400 dark:text-green-400"
                 >
-                    Showing {{ results.sheets.units.length }} of
-                    {{ formatNumber(results.sheets.polling_units) }}, disputed
-                    polling units first.
-                </p>
-                <p
-                    v-if="!selectedState"
-                    class="text-sm text-gray-600 dark:text-gray-400"
-                >
-                    Choose a state to see its polling units with result sheets.
-                </p>
+                    See the result sheets
+                </Link>
             </section>
 
             <section

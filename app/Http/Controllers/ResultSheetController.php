@@ -23,7 +23,7 @@ class ResultSheetController extends Controller
     public function create(Request $request): Response|RedirectResponse
     {
         $election = Election::current();
-        $report = $election?->reportFrom($request->session()->get(EnsureVinEntered::SESSION_KEY.'.hash'));
+        $report = $election?->reportFrom($request->session()->get(EnsureVinEntered::REPORT_KEY));
 
         if ($report === null) {
             return to_route('reports.create');

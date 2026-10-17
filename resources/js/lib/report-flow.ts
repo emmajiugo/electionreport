@@ -1,6 +1,6 @@
 import { useForm, usePage } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
-import { store } from '@/routes/reports';
+import { computed, ref, watch } from 'vue';
+import { check, store } from '@/routes/reports';
 
 export type ReportStep =
     | 'location'
@@ -41,6 +41,12 @@ export function useReportFlow() {
     });
 
     const preparingPhoto = ref(false);
+    const checkingPollingUnit = ref(false);
+
+    watch(
+        () => form.polling_unit_id,
+        () => form.clearErrors('polling_unit_id'),
+    );
 
     function hasReason(reason: string | null): boolean {
         if (reason === null) {
@@ -53,7 +59,9 @@ export function useReportFlow() {
     const canContinue = computed(() => {
         switch (step.value) {
             case 'location':
-                return form.polling_unit_id !== null;
+                return (
+                    form.polling_unit_id !== null && !checkingPollingUnit.value
+                );
             case 'notHeldReason':
                 return hasReason(form.not_held_reason);
             case 'notVotedReason':
@@ -99,6 +107,36 @@ export function useReportFlow() {
     function answerVoted(voted: boolean): void {
         form.voted = voted;
         goTo(voted ? 'party' : 'notVotedReason');
+    }
+
+    // Tells the voter straight away if this VIN already reported the unit. Fails open: if the check
+    // can't run, the submission still enforces one report per polling unit.
+    async function checkPollingUnit(pollingUnitId: number): Promise<void> {
+        checkingPollingUnit.value = true;
+
+        try {
+            const response = await fetch(check.url(pollingUnitId), {
+                headers: { Accept: 'application/json' },
+            });
+
+            if (response.ok) {
+                const { error } = (await response.json()) as {
+                    error: string | null;
+                };
+
+                if (error) {
+                    form.setError('polling_unit_id', error);
+
+                    return;
+                }
+            }
+        } catch {
+            // Offline or blocked: let the voter carry on.
+        } finally {
+            checkingPollingUnit.value = false;
+        }
+
+        goTo('held');
     }
 
     function submit(): void {
@@ -147,7 +185,7 @@ export function useReportFlow() {
         }
 
         if (step.value === 'location') {
-            goTo('held');
+            void checkPollingUnit(form.polling_unit_id!);
         } else if (step.value === 'notVotedReason' || step.value === 'party') {
             goTo('resultSheet');
         } else if (isFinalStep.value) {

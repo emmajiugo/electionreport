@@ -8,7 +8,7 @@ use App\Models\Ward;
 use Illuminate\Support\Str;
 
 beforeEach(function () {
-    $this->withSession([EnsureVinEntered::SESSION_KEY => ['hash' => 'hash', 'masked' => 'masked']]);
+    $this->withSession([EnsureVinEntered::SESSION_KEY => ['hash' => 'hash', 'masked' => 'masked', 'report_id' => null]]);
 });
 
 test('location lookups require a VIN to have been entered', function () {

@@ -59,9 +59,7 @@ class StoreResultSheetReviewRequest extends FormRequest
 
     public function report(): ?Report
     {
-        $vinHash = $this->session()->get(EnsureVinEntered::SESSION_KEY.'.hash');
-
-        return $this->report ??= Election::current()?->reportFrom($vinHash);
+        return $this->report ??= Election::current()?->reportFrom($this->session()->get(EnsureVinEntered::REPORT_KEY));
     }
 
     public function sheet(): ResultSheet

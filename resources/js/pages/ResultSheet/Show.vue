@@ -3,7 +3,8 @@ import { Head, Link } from '@inertiajs/vue3';
 import AppHeader from '@/components/AppHeader.vue';
 import NotOfficialNotice from '@/components/NotOfficialNotice.vue';
 import ResultSheetCard from '@/components/ResultSheetCard.vue';
-import { results } from '@/routes';
+import SeeResultsButton from '@/components/SeeResultsButton.vue';
+import { index as resultSheetsIndex } from '@/routes/result-sheets';
 import type {
     BallotParty,
     Election,
@@ -29,6 +30,8 @@ defineProps<{
         <AppHeader :election-name="election?.name" />
 
         <main class="mx-auto flex w-full max-w-md grow flex-col gap-6 p-4">
+            <SeeResultsButton />
+
             <h1 class="text-2xl font-semibold">Result sheets</h1>
 
             <div class="rounded-xl bg-white p-4 dark:bg-gray-900">
@@ -66,12 +69,14 @@ defineProps<{
                 No result sheet has been uploaded for this polling unit yet.
             </p>
 
-            <Link
-                :href="results()"
-                class="mt-auto text-center font-medium text-green-700 dark:text-green-400"
-            >
-                See the results
-            </Link>
+            <div class="mt-auto flex flex-col gap-3 text-center">
+                <Link
+                    :href="resultSheetsIndex()"
+                    class="font-medium text-green-700 dark:text-green-400"
+                >
+                    See all result sheets
+                </Link>
+            </div>
         </main>
     </div>
 </template>

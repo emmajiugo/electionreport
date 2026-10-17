@@ -59,19 +59,26 @@ class Election extends Model
         return $this->hasMany(Report::class);
     }
 
-    public function hasReportFrom(string $vinHash): bool
+    /**
+     * The report a VIN session filed or came back for. A partial VIN alone can match reports at
+     * several polling units, so the session holds the report's ID rather than looking it up by hash.
+     */
+    public function reportFrom(?int $reportId): ?Report
     {
-        return $this->reports()->where('vin_hash', $vinHash)->exists();
+        return $reportId === null ? null : $this->reports()->find($reportId);
     }
 
-    public function reportFrom(string $vinHash): ?Report
+    /**
+     * Per polling unit, because two voters can share the first and last characters of their VINs.
+     */
+    public function hasReportFrom(string $vinHash, int $pollingUnitId): bool
     {
-        return $this->reports()->where('vin_hash', $vinHash)->first();
+        return $this->reports()->where('polling_unit_id', $pollingUnitId)->where('vin_hash', $vinHash)->exists();
     }
 
     public static function duplicateVinMessage(): string
     {
-        return 'A report has already been submitted with this VIN.';
+        return 'A report has already been submitted with this VIN at this polling unit.';
     }
 
     /**

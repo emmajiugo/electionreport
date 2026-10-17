@@ -12,7 +12,7 @@ use App\Support\VoterIdentificationNumber;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 
-const REVIEW_VIN = '90F5B1C3E2950654321';
+const REVIEW_VIN = ['90F5', '4321'];
 
 beforeEach(function () {
     Storage::fake('public');
@@ -22,16 +22,24 @@ beforeEach(function () {
 
 function enterVinForReview(): void
 {
-    $vin = VoterIdentificationNumber::fromInput(REVIEW_VIN);
+    $vin = VoterIdentificationNumber::fromParts(...REVIEW_VIN);
 
-    test()->withSession([EnsureVinEntered::SESSION_KEY => ['hash' => $vin->hash(), 'masked' => $vin->masked()]]);
+    test()->withSession([EnsureVinEntered::SESSION_KEY => ['hash' => $vin->hash(), 'masked' => $vin->masked(), 'report_id' => null]]);
 }
 
-function reviewerReport(): Report
+/**
+ * Files a report with the entered VIN and makes it this session's report, as VIN entry or reporting would.
+ */
+function reviewerReport(bool $electionHeld = true): Report
 {
-    return Report::factory()->for(test()->election)->for(test()->pollingUnit)->create([
-        'vin_hash' => VoterIdentificationNumber::fromInput(REVIEW_VIN)->hash(),
-    ]);
+    $report = Report::factory()
+        ->unless($electionHeld, fn ($factory) => $factory->electionNotHeld())
+        ->for(test()->election)
+        ->for(test()->pollingUnit)
+        ->create(['vin_hash' => VoterIdentificationNumber::fromParts(...REVIEW_VIN)->hash()]);
+    test()->withSession([EnsureVinEntered::REPORT_KEY => $report->id]);
+
+    return $report;
 }
 
 function sheetAtReviewersUnit(): ResultSheet
@@ -42,7 +50,7 @@ function sheetAtReviewersUnit(): ResultSheet
 test('reviewing a sheet needs an entered VIN', function () {
     $sheet = sheetAtReviewersUnit();
 
-    $this->post(route('result-sheets.reviews.store', $sheet), ['verdict' => 'confirm'])->assertRedirect(route('home'));
+    $this->post(route('result-sheets.reviews.store', $sheet), ['verdict' => 'confirm'])->assertRedirect(route('vin.create'));
 
     expect(ResultSheetReview::count())->toBe(0);
 });
@@ -100,9 +108,7 @@ test('a voter cannot review a sheet from another polling unit', function () {
 
 test('a voter whose report says the election did not hold cannot review', function () {
     enterVinForReview();
-    Report::factory()->electionNotHeld()->for($this->election)->for($this->pollingUnit)->create([
-        'vin_hash' => VoterIdentificationNumber::fromInput(REVIEW_VIN)->hash(),
-    ]);
+    reviewerReport(electionHeld: false);
 
     $this->post(route('result-sheets.reviews.store', sheetAtReviewersUnit()), ['verdict' => 'confirm'])->assertForbidden();
 });

@@ -12,25 +12,33 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
 
-const SHEET_VIN = '90F5B1C3E2950123456';
+const SHEET_VIN = ['90F5', '3456'];
 
 beforeEach(function () {
     $this->election = Election::factory()->create();
     $this->pollingUnit = PollingUnit::factory()->create();
 });
 
-function enterVinForSheet(string $vin = SHEET_VIN): void
+function enterVinForSheet(): void
 {
-    $vin = VoterIdentificationNumber::fromInput($vin);
+    $vin = VoterIdentificationNumber::fromParts(...SHEET_VIN);
 
-    test()->withSession([EnsureVinEntered::SESSION_KEY => ['hash' => $vin->hash(), 'masked' => $vin->masked()]]);
+    test()->withSession([EnsureVinEntered::SESSION_KEY => ['hash' => $vin->hash(), 'masked' => $vin->masked(), 'report_id' => null]]);
 }
 
-function reportFromSheetVin(): Report
+/**
+ * Files a report with the entered VIN and makes it this session's report, as VIN entry or reporting would.
+ */
+function reportFromSheetVin(?PollingUnit $pollingUnit = null, bool $electionHeld = true): Report
 {
-    return Report::factory()->for(test()->election)->for(test()->pollingUnit)->create([
-        'vin_hash' => VoterIdentificationNumber::fromInput(SHEET_VIN)->hash(),
-    ]);
+    $report = Report::factory()
+        ->unless($electionHeld, fn ($factory) => $factory->electionNotHeld())
+        ->for(test()->election)
+        ->for($pollingUnit ?? test()->pollingUnit)
+        ->create(['vin_hash' => VoterIdentificationNumber::fromParts(...SHEET_VIN)->hash()]);
+    test()->withSession([EnsureVinEntered::REPORT_KEY => $report->id]);
+
+    return $report;
 }
 
 /**
@@ -58,8 +66,8 @@ function sheetUpload(string $jpeg): UploadedFile
 }
 
 test('result sheet routes cannot be reached without entering a VIN', function () {
-    $this->get(route('result-sheets.create'))->assertRedirect(route('home'));
-    $this->post(route('result-sheets.store'), ['result_sheet' => sheetUpload(sheetPhoto())])->assertRedirect(route('home'));
+    $this->get(route('result-sheets.create'))->assertRedirect(route('vin.create'));
+    $this->post(route('result-sheets.store'), ['result_sheet' => sheetUpload(sheetPhoto())])->assertRedirect(route('vin.create'));
 });
 
 test('a voter who has not reported yet is sent to the report form', function () {
@@ -125,19 +133,17 @@ test('photo metadata such as the GPS position is not kept', function () {
 
 test('the same photo gets the same fingerprint even after resizing, and a different photo does not', function () {
     Storage::fake('public');
-    $upload = function (string $vin, PollingUnit $pollingUnit, string $jpeg): ResultSheet {
-        Report::factory()->for($this->election)->for($pollingUnit)->create([
-            'vin_hash' => VoterIdentificationNumber::fromInput($vin)->hash(),
-        ]);
-        enterVinForSheet($vin);
+    enterVinForSheet();
+    $upload = function (PollingUnit $pollingUnit, string $jpeg): ResultSheet {
+        reportFromSheetVin($pollingUnit);
         $this->post(route('result-sheets.store'), ['result_sheet' => sheetUpload($jpeg)]);
 
         return ResultSheet::query()->latest('id')->firstOrFail();
     };
 
-    $original = $upload('AAAAAAAAAAAAAAAAAA1', $this->pollingUnit, sheetPhoto());
-    $resized = $upload('AAAAAAAAAAAAAAAAAA2', PollingUnit::factory()->create(), sheetPhoto(400, 300));
-    $different = $upload('AAAAAAAAAAAAAAAAAA3', PollingUnit::factory()->create(), sheetPhoto(flipped: true));
+    $original = $upload($this->pollingUnit, sheetPhoto());
+    $resized = $upload(PollingUnit::factory()->create(), sheetPhoto(400, 300));
+    $different = $upload(PollingUnit::factory()->create(), sheetPhoto(flipped: true));
 
     expect($resized->image_hash)->toBe($original->image_hash)
         ->and($different->image_hash)->not->toBe($original->image_hash);
@@ -157,9 +163,7 @@ test('a voter can upload only one result sheet', function () {
 test('a voter who reported that the election did not hold has no sheet to upload', function () {
     Storage::fake('public');
     enterVinForSheet();
-    Report::factory()->electionNotHeld()->for($this->election)->for($this->pollingUnit)->create([
-        'vin_hash' => VoterIdentificationNumber::fromInput(SHEET_VIN)->hash(),
-    ]);
+    reportFromSheetVin(electionHeld: false);
 
     $this->get(route('result-sheets.create'))->assertRedirect(route('home'));
     $this->post(route('result-sheets.store'), ['result_sheet' => sheetUpload(sheetPhoto())])->assertForbidden();

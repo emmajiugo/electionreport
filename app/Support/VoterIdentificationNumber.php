@@ -4,11 +4,22 @@ namespace App\Support;
 
 use RuntimeException;
 
+/**
+ * Only the first and last few characters of a VIN: voters never give us the full number.
+ */
 final readonly class VoterIdentificationNumber
 {
+    /**
+     * Length of the full VIN printed on a PVC, which the masked form keeps.
+     */
     public const int LENGTH = 19;
 
-    private function __construct(public string $value) {}
+    /**
+     * How many characters voters give from each end of their VIN.
+     */
+    public const int PART_LENGTH = 4;
+
+    private function __construct(public string $first, public string $last) {}
 
     /**
      * Normalise user input: VINs are printed in spaced groups and people type them in any case.
@@ -18,23 +29,23 @@ final readonly class VoterIdentificationNumber
         return strtoupper((string) preg_replace('/[^A-Za-z0-9]/', '', $input));
     }
 
-    public static function fromInput(string $input): self
+    public static function fromParts(string $first, string $last): self
     {
-        return new self(self::normalize($input));
+        return new self(self::normalize($first), self::normalize($last));
     }
 
     /**
-     * Keyed rather than salted so the same VIN always maps to the same hash, which is what
-     * lets the unique index enforce one report per VIN per election.
+     * Keyed rather than salted so the same characters always map to the same hash, which is what
+     * lets the unique index enforce one report per partial VIN per polling unit.
      */
     public function hash(): string
     {
-        return self::hmac($this->value);
+        return self::hmac($this->first.$this->last);
     }
 
     public function masked(): string
     {
-        return substr($this->value, 0, 4).str_repeat('*', max(strlen($this->value) - 8, 0)).substr($this->value, -4);
+        return $this->first.str_repeat('*', self::LENGTH - strlen($this->first) - strlen($this->last)).$this->last;
     }
 
     /**

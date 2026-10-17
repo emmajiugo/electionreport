@@ -2,9 +2,9 @@
 import { Head, Link } from '@inertiajs/vue3';
 import AppHeader from '@/components/AppHeader.vue';
 import NotOfficialNotice from '@/components/NotOfficialNotice.vue';
+import SeeResultsButton from '@/components/SeeResultsButton.vue';
 import ShareCard from '@/components/ShareCard.vue';
 import type { ShareCardDetails } from '@/lib/share-card';
-import { results } from '@/routes';
 import { create as addResultSheet } from '@/routes/result-sheets';
 
 defineProps<{
@@ -22,6 +22,7 @@ defineProps<{
         <main
             class="flex grow flex-col items-center justify-center gap-4 p-6 text-center"
         >
+            <SeeResultsButton class="max-w-md" />
             <div
                 class="flex size-20 items-center justify-center rounded-full bg-green-700 text-white"
             >
@@ -37,8 +38,9 @@ defineProps<{
             </div>
             <h1 class="text-2xl font-semibold">Thank you for reporting</h1>
             <p class="max-w-sm text-gray-600 dark:text-gray-400">
-                We've recorded your report. Share ElectionReport with other
-                voters so more polling units get monitored.
+                We've recorded your report. It can take up to a minute to show
+                in the results. Share ElectionReport with other voters so more
+                polling units get monitored.
             </p>
             <ShareCard v-if="shareCard" :card="shareCard" class="text-left" />
             <NotOfficialNotice class="w-full max-w-md text-left" />
@@ -46,10 +48,11 @@ defineProps<{
                 v-if="canAddResultSheet"
                 class="flex w-full max-w-md flex-col gap-2 rounded-xl bg-white p-4 dark:bg-gray-900"
             >
-                <p class="font-medium">Is the result sheet posted?</p>
+                <p class="font-medium">Has counting finished?</p>
                 <p class="text-sm text-gray-600 dark:text-gray-400">
-                    Add a photo of it now, or come back later and enter your VIN
-                    again.
+                    Once the result sheet (Form EC8A) is filled in and pasted up
+                    at your polling unit, take a photo and add it. Not finished
+                    yet? Come back later and enter your VIN again.
                 </p>
                 <Link
                     :href="addResultSheet()"
@@ -58,16 +61,6 @@ defineProps<{
                     Add the result sheet
                 </Link>
             </div>
-            <Link
-                :href="results()"
-                :class="
-                    canAddResultSheet
-                        ? 'font-medium text-green-700 dark:text-green-400'
-                        : 'rounded-xl bg-green-700 px-6 py-3 font-semibold text-white'
-                "
-            >
-                See the results
-            </Link>
         </main>
     </div>
 </template>

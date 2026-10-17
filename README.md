@@ -4,7 +4,7 @@
 
 # ElectionReport
 
-ElectionReport lets Nigerian voters report what happened at their polling unit on election day. A voter enters their VIN, picks their polling unit, and says whether the election held, whether they voted, and who they voted for.
+ElectionReport lets Nigerian voters report what happened at their polling unit on election day. A voter enters the first 4 and last 4 characters of their VIN, picks their polling unit, and says whether the election held, whether they voted, and who they voted for.
 
 ## Local setup
 

@@ -12,7 +12,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 
-const FLAGS_VIN = '90F5B1C3E2950888888';
+const FLAGS_VIN = ['90F5', '8888'];
 
 beforeEach(function () {
     Storage::fake('public');
@@ -20,11 +20,9 @@ beforeEach(function () {
     $this->election = Election::factory()->create(['held_on' => '2027-02-20']);
     $this->pollingUnit = PollingUnit::factory()->create();
 
-    Report::factory()->for($this->election)->for($this->pollingUnit)->create([
-        'vin_hash' => VoterIdentificationNumber::fromInput(FLAGS_VIN)->hash(),
-    ]);
-    $vin = VoterIdentificationNumber::fromInput(FLAGS_VIN);
-    $this->withSession([EnsureVinEntered::SESSION_KEY => ['hash' => $vin->hash(), 'masked' => $vin->masked()]]);
+    $vin = VoterIdentificationNumber::fromParts(...FLAGS_VIN);
+    $report = Report::factory()->for($this->election)->for($this->pollingUnit)->create(['vin_hash' => $vin->hash()]);
+    $this->withSession([EnsureVinEntered::SESSION_KEY => ['hash' => $vin->hash(), 'masked' => $vin->masked(), 'report_id' => $report->id]]);
 });
 
 /**
@@ -93,9 +91,10 @@ test('a photo also uploaded for another polling unit is flagged', function () {
 test('practice sheets are never flagged as reused, since they all share the sample image', function () {
     config(['electionreport.mode' => 'test']);
     // The voter's report from beforeEach is in the live table; the practice page needs one in the test table.
-    Report::factory()->for($this->election)->for($this->pollingUnit)->create([
-        'vin_hash' => VoterIdentificationNumber::fromInput(FLAGS_VIN)->hash(),
+    $practiceReport = Report::factory()->for($this->election)->for($this->pollingUnit)->create([
+        'vin_hash' => VoterIdentificationNumber::fromParts(...FLAGS_VIN)->hash(),
     ]);
+    $this->withSession([EnsureVinEntered::REPORT_KEY => $practiceReport->id]);
     sheetAtFlaggedUnit(['image_hash' => 'cccccccccccccccc']);
     sheetAtFlaggedUnit(['image_hash' => 'cccccccccccccccc'], PollingUnit::factory()->create());
 

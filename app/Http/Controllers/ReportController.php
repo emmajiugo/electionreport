@@ -9,11 +9,13 @@ use App\Http\Requests\StoreReportRequest;
 use App\Models\Election;
 use App\Models\Party;
 use App\Models\PollingUnit;
+use App\Models\Report;
 use App\Models\ResultSheet;
 use App\Models\State;
 use App\Support\ResultSheetImage;
 use App\Support\VoterIdentificationNumber;
 use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -41,7 +43,7 @@ class ReportController extends Controller
     {
         $election = Election::current();
 
-        if ($election?->hasReportFrom($request->session()->get(EnsureVinEntered::SESSION_KEY.'.hash'))) {
+        if ($election?->reportFrom($request->session()->get(EnsureVinEntered::REPORT_KEY))) {
             return to_route('result-sheets.create');
         }
 
@@ -63,6 +65,20 @@ class ReportController extends Controller
         ]);
     }
 
+    /**
+     * Lets the form tell a voter they already reported a polling unit as soon as they pick it,
+     * instead of after every question. The submission still enforces the rule on its own.
+     */
+    public function check(Request $request, PollingUnit $pollingUnit): JsonResponse
+    {
+        $alreadyReported = (bool) Election::current()?->hasReportFrom(
+            $request->session()->get(EnsureVinEntered::SESSION_KEY.'.hash'),
+            $pollingUnit->id,
+        );
+
+        return response()->json(['error' => $alreadyReported ? Election::duplicateVinMessage() : null]);
+    }
+
     public function store(StoreReportRequest $request): RedirectResponse
     {
         /** @var Election $election */
@@ -72,7 +88,7 @@ class ReportController extends Controller
         $path = $image?->store($election->id);
 
         try {
-            DB::transaction(function () use ($request, $election, $ipHash, $image, $path): void {
+            $report = DB::transaction(function () use ($request, $election, $ipHash, $image, $path): Report {
                 $report = $election->reports()->create([
                     'polling_unit_id' => $request->integer('polling_unit_id'),
                     'vin_hash' => $request->vinHash(),
@@ -96,6 +112,8 @@ class ReportController extends Controller
                         'ip_hash' => $ipHash,
                     ]);
                 }
+
+                return $report;
             });
         } catch (UniqueConstraintViolationException) {
             if ($path !== null) {
@@ -107,7 +125,9 @@ class ReportController extends Controller
         }
 
         // A voter whose election held keeps the VIN session so they can add the result sheet straight away.
-        if (! $request->boolean('election_held')) {
+        if ($request->boolean('election_held')) {
+            $request->session()->put(EnsureVinEntered::REPORT_KEY, $report->id);
+        } else {
             $request->session()->forget(EnsureVinEntered::SESSION_KEY);
         }
 
@@ -130,13 +150,22 @@ class ReportController extends Controller
             return to_route('home');
         }
 
-        $report = $request->session()->has(EnsureVinEntered::SESSION_KEY)
-            ? Election::current()?->reportFrom($request->session()->get(EnsureVinEntered::SESSION_KEY.'.hash'))
-            : null;
+        $report = Election::current()?->reportFrom($request->session()->get(EnsureVinEntered::REPORT_KEY));
 
         return Inertia::render('Report/Submitted', [
             'canAddResultSheet' => $report !== null && $report->resultSheet()->doesntExist(),
             'shareCard' => $request->session()->get('share_card'),
         ]);
+    }
+
+    /**
+     * A partial VIN can match another voter's report; this lets a voter who landed on someone else's
+     * polling unit report their own instead.
+     */
+    public function another(Request $request): RedirectResponse
+    {
+        $request->session()->forget(EnsureVinEntered::REPORT_KEY);
+
+        return to_route('reports.create');
     }
 }

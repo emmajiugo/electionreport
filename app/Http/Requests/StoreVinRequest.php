@@ -23,8 +23,10 @@ class StoreVinRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        if (is_string($this->input('vin'))) {
-            $this->merge(['vin' => VoterIdentificationNumber::normalize($this->input('vin'))]);
+        foreach (['vin_first', 'vin_last'] as $field) {
+            if (is_string($this->input($field))) {
+                $this->merge([$field => VoterIdentificationNumber::normalize($this->input($field))]);
+            }
         }
     }
 
@@ -36,7 +38,8 @@ class StoreVinRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'vin' => ['required', 'string', 'regex:/^[A-Z0-9]{'.VoterIdentificationNumber::LENGTH.'}$/'],
+            'vin_first' => ['required', 'string', 'regex:/^[A-Z0-9]{'.VoterIdentificationNumber::PART_LENGTH.'}$/'],
+            'vin_last' => ['required', 'string', 'regex:/^[A-Z0-9]{'.VoterIdentificationNumber::PART_LENGTH.'}$/'],
             'turnstile_token' => ['bail', 'required', 'string', new Turnstile($this->ip())],
         ];
     }
@@ -48,7 +51,10 @@ class StoreVinRequest extends FormRequest
     {
         return [
             'turnstile_token.required' => 'Complete the security check to continue.',
-            'vin.regex' => 'Your VIN should be '.VoterIdentificationNumber::LENGTH.' letters and numbers, as printed on your PVC.',
+            'vin_first.required' => 'Enter the first '.VoterIdentificationNumber::PART_LENGTH.' characters of your VIN.',
+            'vin_first.regex' => 'Enter the first '.VoterIdentificationNumber::PART_LENGTH.' letters and numbers of your VIN, as printed on your PVC.',
+            'vin_last.required' => 'Enter the last '.VoterIdentificationNumber::PART_LENGTH.' characters of your VIN.',
+            'vin_last.regex' => 'Enter the last '.VoterIdentificationNumber::PART_LENGTH.' letters and numbers of your VIN, as printed on your PVC.',
         ];
     }
 
@@ -61,17 +67,6 @@ class StoreVinRequest extends FormRequest
             function (Validator $validator): void {
                 if ($this->election() === null) {
                     $validator->errors()->add('election', 'There is no election open for reports right now.');
-
-                    return;
-                }
-
-                if ($validator->errors()->has('vin')) {
-                    return;
-                }
-
-                // A voter whose election held may come back to add the result sheet; nothing else is left to do.
-                if ($this->election()->reportFrom($this->vin()->hash())?->election_held === false) {
-                    $validator->errors()->add('vin', Election::duplicateVinMessage());
                 }
             },
         ];
@@ -84,6 +79,6 @@ class StoreVinRequest extends FormRequest
 
     public function vin(): VoterIdentificationNumber
     {
-        return VoterIdentificationNumber::fromInput($this->string('vin')->value());
+        return VoterIdentificationNumber::fromParts($this->string('vin_first')->value(), $this->string('vin_last')->value());
     }
 }

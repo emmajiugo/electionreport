@@ -87,8 +87,8 @@ class StoreReportRequest extends FormRequest
                     return;
                 }
 
-                // Re-checked here because the VIN may have reported from another tab since it was entered.
-                if ($this->election()->hasReportFrom($this->vinHash())) {
+                // Re-checked here because the VIN may have reported this polling unit from another tab.
+                if ($this->election()->hasReportFrom($this->vinHash(), $this->integer('polling_unit_id'))) {
                     $validator->errors()->add('vin', Election::duplicateVinMessage());
                 }
             },

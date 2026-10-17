@@ -23,7 +23,7 @@ class ReportFactory extends Factory
         return [
             'election_id' => Election::factory(),
             'polling_unit_id' => PollingUnit::factory(),
-            'vin_hash' => fn (array $attributes): string => VoterIdentificationNumber::fromInput(fake()->unique()->bothify(str_repeat('?#', 10)))->hash(),
+            'vin_hash' => fn (array $attributes): string => VoterIdentificationNumber::fromParts(fake()->unique()->bothify('?#?#'), fake()->bothify('#?#?'))->hash(),
             'vin_masked' => '90F5***********1234',
             'election_held' => true,
             'voted' => false,

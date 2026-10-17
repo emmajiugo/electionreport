@@ -5,9 +5,11 @@ import AppHeader from '@/components/AppHeader.vue';
 import ResultSheetCard from '@/components/ResultSheetCard.vue';
 import ResultSheetFiguresForm from '@/components/ResultSheetFiguresForm.vue';
 import ResultSheetPicker from '@/components/ResultSheetPicker.vue';
-import { home, results } from '@/routes';
+import SeeResultsButton from '@/components/SeeResultsButton.vue';
+import { another as reportAnother } from '@/routes/reports';
 import { store } from '@/routes/result-sheets';
 import { store as storeReview } from '@/routes/result-sheets/reviews';
+import { create as enterVin } from '@/routes/vin';
 import type {
     BallotParty,
     Election,
@@ -64,6 +66,8 @@ function upload(): void {
         <AppHeader :election-name="election.name" />
 
         <main class="mx-auto flex w-full max-w-md grow flex-col gap-6 p-4">
+            <SeeResultsButton />
+
             <div
                 class="flex items-center justify-between gap-3 rounded-xl bg-white px-4 py-3 text-sm dark:bg-gray-900"
             >
@@ -74,7 +78,7 @@ function upload(): void {
                     }}</span>
                 </span>
                 <Link
-                    :href="home()"
+                    :href="enterVin()"
                     class="font-medium text-green-700 dark:text-green-400"
                 >
                     Change
@@ -91,6 +95,14 @@ function upload(): void {
                     {{ pollingUnit.code }} · {{ pollingUnit.ward }},
                     {{ pollingUnit.lga }}, {{ pollingUnit.state }}
                 </p>
+                <Link
+                    :href="reportAnother()"
+                    method="post"
+                    as="button"
+                    class="mt-2 text-sm font-medium text-green-700 dark:text-green-400"
+                >
+                    Not your polling unit? Report yours
+                </Link>
             </div>
 
             <section v-if="sheets.length" class="flex flex-col gap-3">
@@ -176,10 +188,10 @@ function upload(): void {
                     }}
                 </h2>
                 <p class="text-gray-600 dark:text-gray-400">
-                    When counting ends, the officials post the result sheet
-                    (Form EC8A) at the polling unit. Take a clear photo of the
-                    whole sheet, with every figure readable. Only take it when
-                    it is safe to do so.
+                    Once the votes are counted and the officials have filled in
+                    the result sheet (Form EC8A) and pasted it up at the polling
+                    unit, take a clear photo of the whole sheet, with every
+                    figure readable. Only take it when it is safe to do so.
                 </p>
 
                 <ResultSheetPicker
@@ -207,13 +219,6 @@ function upload(): void {
                     {{ form.processing ? 'Uploading…' : 'Upload photo' }}
                 </button>
             </form>
-
-            <Link
-                :href="results()"
-                class="mt-auto text-center font-medium text-green-700 dark:text-green-400"
-            >
-                See the results
-            </Link>
         </main>
     </div>
 </template>

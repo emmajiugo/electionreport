@@ -8,7 +8,7 @@ import PollingUnitPicker from '@/components/PollingUnitPicker.vue';
 import ReasonPicker from '@/components/ReasonPicker.vue';
 import ResultSheetPicker from '@/components/ResultSheetPicker.vue';
 import { useReportFlow } from '@/lib/report-flow';
-import { home } from '@/routes';
+import { create as enterVin } from '@/routes/vin';
 import type { Election, Option, Party, ReasonOption } from '@/types';
 
 const props = defineProps<{
@@ -49,7 +49,7 @@ const title = computed(() => {
         case 'party':
             return 'Which party did you vote for?';
         case 'resultSheet':
-            return 'Is the result sheet posted?';
+            return 'Has counting finished?';
         default:
             return '';
     }
@@ -92,7 +92,7 @@ const title = computed(() => {
                     }}</span>
                 </span>
                 <Link
-                    :href="home()"
+                    :href="enterVin()"
                     class="font-medium text-green-700 dark:text-green-400"
                 >
                     Change
@@ -173,10 +173,12 @@ const title = computed(() => {
 
             <div v-else-if="step === 'resultSheet'" class="flex flex-col gap-4">
                 <p class="text-gray-600 dark:text-gray-400">
-                    If the officials have posted the result sheet (Form EC8A),
-                    add a clear photo of the whole sheet. This is optional: you
-                    can submit now and come back later with your VIN. Only take
-                    the photo when it is safe to do so.
+                    Once the votes are counted and the officials have filled in
+                    the result sheet (Form EC8A) and pasted it up, take a clear
+                    photo of the whole sheet and add it here. This is optional:
+                    if counting isn't finished yet, submit now and come back
+                    later with your VIN. Only take the photo when it is safe to
+                    do so.
                 </p>
                 <ResultSheetPicker
                     v-model:photo="form.result_sheet"

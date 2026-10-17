@@ -14,6 +14,11 @@ class EnsureVinEntered
     public const string SESSION_KEY = 'report_vin';
 
     /**
+     * The ID of the report this session filed, or came back to add a result sheet to.
+     */
+    public const string REPORT_KEY = self::SESSION_KEY.'.report_id';
+
+    /**
      * Handle an incoming request.
      *
      * @param  Closure(Request): (Response)  $next
@@ -25,7 +30,7 @@ class EnsureVinEntered
                 abort(401, 'Enter your VIN first.');
             }
 
-            return to_route('home');
+            return to_route('vin.create');
         }
 
         return $next($request);

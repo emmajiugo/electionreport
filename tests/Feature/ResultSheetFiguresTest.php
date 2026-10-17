@@ -11,7 +11,7 @@ use App\Support\VoterIdentificationNumber;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 
-const FIGURES_VIN = '90F5B1C3E2950777777';
+const FIGURES_VIN = ['90F5', '7777'];
 
 beforeEach(function () {
     Storage::fake('public');
@@ -23,16 +23,22 @@ beforeEach(function () {
 
 function enterVinForFigures(): void
 {
-    $vin = VoterIdentificationNumber::fromInput(FIGURES_VIN);
+    $vin = VoterIdentificationNumber::fromParts(...FIGURES_VIN);
 
-    test()->withSession([EnsureVinEntered::SESSION_KEY => ['hash' => $vin->hash(), 'masked' => $vin->masked()]]);
+    test()->withSession([EnsureVinEntered::SESSION_KEY => ['hash' => $vin->hash(), 'masked' => $vin->masked(), 'report_id' => null]]);
 }
 
+/**
+ * Files a report with the entered VIN and makes it this session's report, as VIN entry or reporting would.
+ */
 function figuresUploaderReport(): Report
 {
-    return Report::factory()->for(test()->election)->for(test()->pollingUnit)->create([
-        'vin_hash' => VoterIdentificationNumber::fromInput(FIGURES_VIN)->hash(),
+    $report = Report::factory()->for(test()->election)->for(test()->pollingUnit)->create([
+        'vin_hash' => VoterIdentificationNumber::fromParts(...FIGURES_VIN)->hash(),
     ]);
+    test()->withSession([EnsureVinEntered::REPORT_KEY => $report->id]);
+
+    return $report;
 }
 
 /**
@@ -111,7 +117,7 @@ test('a voter without an uploaded sheet cannot record figures', function () {
 });
 
 test('recording figures needs an entered VIN', function () {
-    $this->post(route('result-sheets.figures.store'), sheetFigures())->assertRedirect(route('home'));
+    $this->post(route('result-sheets.figures.store'), sheetFigures())->assertRedirect(route('vin.create'));
 });
 
 test('unusable figures are rejected', function (Closure $case) {

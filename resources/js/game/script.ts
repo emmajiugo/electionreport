@@ -121,9 +121,9 @@ export const scenes: Record<ReportStep, Scene> = {
         minutes: 1050,
         focus: [-4.5, 1, -2],
         crowd: 'atWall',
-        question: 'Is the result sheet posted?',
+        question: 'Has counting finished?',
         narration:
-            'Counting is done. If the officials have posted the result sheet (Form EC8A) on the wall, take a clear photo of the whole sheet.',
+            'Counting is done. Once the officials have filled in the result sheet (Form EC8A) and pasted it up, take a clear photo of the whole sheet.',
         bubbles: [
             {
                 speaker: 'Polling agent',

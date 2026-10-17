@@ -43,7 +43,6 @@ export type Results = {
         polling_units: number;
         corroborated: number;
         contested: number;
-        units: SheetUnit[];
     };
     standings: {
         states: Standing[];
@@ -67,6 +66,7 @@ export type SheetUnit = {
     name: string;
     code: string;
     lga: string;
+    state: string;
     sheets: number;
     status: 'contested' | 'corroborated' | 'unconfirmed';
     status_label: string;

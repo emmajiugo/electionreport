@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
 
-const TESTER_VIN = '90F5B1C3E2950123456';
+const TESTER_VIN = ['90F5', '3456'];
 
 beforeEach(function () {
     $this->election = Election::factory()->create();
@@ -31,11 +31,14 @@ function useMode(string $mode): void
     config(['electionreport.mode' => $mode]);
 }
 
-function submitReportAs(string $vin): void
+/**
+ * @param  array{string, string}  $vin  the first and last characters of the VIN
+ */
+function submitReportAs(array $vin): void
 {
-    $hashed = VoterIdentificationNumber::fromInput($vin);
+    $hashed = VoterIdentificationNumber::fromParts(...$vin);
 
-    test()->withSession([EnsureVinEntered::SESSION_KEY => ['hash' => $hashed->hash(), 'masked' => $hashed->masked()]])
+    test()->withSession([EnsureVinEntered::SESSION_KEY => ['hash' => $hashed->hash(), 'masked' => $hashed->masked(), 'report_id' => null]])
         ->post(route('reports.store'), [
             'polling_unit_id' => test()->pollingUnit->id,
             'election_held' => true,
@@ -67,7 +70,7 @@ test('a VIN used while testing can still report once the app goes live', functio
 
     useMode('live');
 
-    $this->post(route('vin.store'), ['turnstile_token' => 'token', 'vin' => TESTER_VIN])
+    $this->post(route('vin.store'), ['turnstile_token' => 'token', 'vin_first' => TESTER_VIN[0], 'vin_last' => TESTER_VIN[1]])
         ->assertRedirect(route('reports.create'));
 });
 
@@ -141,9 +144,9 @@ test('a practice upload without the sample flag is rejected', function () {
 test('a practice report can attach the sample result sheet without uploading the photo', function () {
     Storage::fake('public');
     useMode('test');
-    $hashed = VoterIdentificationNumber::fromInput(TESTER_VIN);
+    $hashed = VoterIdentificationNumber::fromParts(...TESTER_VIN);
 
-    $this->withSession([EnsureVinEntered::SESSION_KEY => ['hash' => $hashed->hash(), 'masked' => $hashed->masked()]])
+    $this->withSession([EnsureVinEntered::SESSION_KEY => ['hash' => $hashed->hash(), 'masked' => $hashed->masked(), 'report_id' => null]])
         ->post(route('reports.store'), [
             'polling_unit_id' => $this->pollingUnit->id,
             'election_held' => true,

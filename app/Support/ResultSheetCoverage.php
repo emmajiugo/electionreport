@@ -19,12 +19,12 @@ use Illuminate\Support\Facades\DB;
  * when exactly one sheet reached the threshold and none is disputed: the same rules as the per-sheet
  * status, worked out in SQL so the dashboard never loads every sheet.
  *
- * @phpstan-type UnitRow array{id: int, name: string, code: string, lga: string, sheets: int, status: string, status_label: string}
+ * @phpstan-type UnitRow array{id: int, name: string, code: string, lga: string, state: string, sheets: int, status: string, status_label: string}
  */
 final readonly class ResultSheetCoverage
 {
     /**
-     * The dashboard lists units with sheets for one state at a time; disputed ones come first, so they never fall off.
+     * The result sheets page lists this many units at a time; disputed ones come first, so they never fall off.
      */
     public const int UNIT_LIMIT = 50;
 
@@ -59,7 +59,8 @@ final readonly class ResultSheetCoverage
         $statusCase = 'case when '.self::DISPUTED." then 'contested' when ".self::CONFIRMED." then 'corroborated' else 'unconfirmed' end";
 
         return $this->units()
-            ->selectRaw("polling_units.id, polling_units.name, polling_units.code, lgas.name as lga, unit_stats.sheets, {$statusCase} as status")
+            ->join('states', 'states.id', '=', 'lgas.state_id')
+            ->selectRaw("polling_units.id, polling_units.name, polling_units.code, lgas.name as lga, states.name as state, unit_stats.sheets, {$statusCase} as status")
             ->orderByRaw('case when '.self::DISPUTED.' then 0 when '.self::CONFIRMED.' then 1 else 2 end')
             ->orderBy('lgas.name')
             ->orderBy('polling_units.name')
@@ -70,6 +71,7 @@ final readonly class ResultSheetCoverage
                 'name' => (string) $row->name,
                 'code' => (string) $row->code,
                 'lga' => (string) $row->lga,
+                'state' => (string) $row->state,
                 'sheets' => (int) $row->sheets,
                 'status' => (string) $row->status,
                 'status_label' => match ($row->status) {

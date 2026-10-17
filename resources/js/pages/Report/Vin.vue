@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
+import { Head, useForm, usePage } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import AppHeader from '@/components/AppHeader.vue';
 import TurnstileWidget from '@/components/TurnstileWidget.vue';
-import { results } from '@/routes';
 import { store } from '@/routes/vin';
 import type { Election } from '@/types';
 
@@ -12,18 +11,20 @@ defineProps<{
     turnstileSiteKey: string | null;
 }>();
 
-const VIN_LENGTH = 19;
+const PART_LENGTH = 4;
 const VIN_CHARACTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 
 const page = usePage();
 const isTestMode = computed(() => page.props.mode === 'test');
 
-const form = useForm({ vin: '', turnstile_token: '' });
+const form = useForm({ vin_first: '', vin_last: '', turnstile_token: '' });
 const turnstile = ref<InstanceType<typeof TurnstileWidget> | null>(null);
 
-const normalizedVin = computed(() =>
-    form.vin.replace(/[^a-z0-9]/gi, '').toUpperCase(),
-);
+function normalize(part: string): string {
+    return part.replace(/[^a-z0-9]/gi, '').toUpperCase();
+}
+
+const vinError = computed(() => form.errors.vin_first ?? form.errors.vin_last);
 
 // Raised by the server when no election is open; it has no matching form field.
 const electionError = computed(
@@ -32,7 +33,8 @@ const electionError = computed(
 
 const canSubmit = computed(
     () =>
-        normalizedVin.value.length === VIN_LENGTH &&
+        normalize(form.vin_first).length === PART_LENGTH &&
+        normalize(form.vin_last).length === PART_LENGTH &&
         form.turnstile_token !== '' &&
         !form.processing,
 );
@@ -40,12 +42,13 @@ const canSubmit = computed(
 // Testers use a made-up VIN so nobody has to type a real one into a practice site.
 function generateTestVin(): void {
     const characters = Array.from(
-        crypto.getRandomValues(new Uint32Array(VIN_LENGTH)),
+        crypto.getRandomValues(new Uint32Array(PART_LENGTH * 2)),
         (value) => VIN_CHARACTERS[value % VIN_CHARACTERS.length],
     ).join('');
 
-    form.vin = characters.match(/.{1,4}/g)!.join(' ');
-    form.clearErrors('vin');
+    form.vin_first = characters.slice(0, PART_LENGTH);
+    form.vin_last = characters.slice(PART_LENGTH);
+    form.clearErrors('vin_first', 'vin_last');
 }
 
 function submit(): void {
@@ -53,15 +56,16 @@ function submit(): void {
         return;
     }
 
-    form.transform((data) => ({ ...data, vin: normalizedVin.value })).post(
-        store.url(),
-        { onError: () => turnstile.value?.reset() },
-    );
+    form.transform((data) => ({
+        ...data,
+        vin_first: normalize(data.vin_first),
+        vin_last: normalize(data.vin_last),
+    })).post(store.url(), { onError: () => turnstile.value?.reset() });
 }
 </script>
 
 <template>
-    <Head title="Report your polling unit" />
+    <Head title="Enter your VIN" />
     <div
         class="flex min-h-dvh flex-col bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100"
     >
@@ -100,10 +104,10 @@ function submit(): void {
                     </svg>
                 </div>
                 <p class="text-gray-600 dark:text-gray-400">
-                    Tell us what happened at your polling unit. We never save
-                    your VIN. We turn it into a scrambled code that nobody can
-                    read or turn back into your VIN, and we use that code only
-                    to make sure each voter reports once.
+                    Tell us what happened at your polling unit. We only ask for
+                    the first {{ PART_LENGTH }} and last {{ PART_LENGTH }}
+                    characters of your VIN, never the full number. We use them
+                    only to stop the same voter reporting a polling unit twice.
                 </p>
             </div>
 
@@ -116,21 +120,56 @@ function submit(): void {
                 {{ electionError }}
             </p>
 
-            <div class="flex flex-col gap-2">
-                <label for="vin" class="text-sm font-medium">
-                    Voter Identification Number (VIN)
-                </label>
-                <input
-                    id="vin"
-                    v-model="form.vin"
-                    v-focus
-                    type="text"
-                    autocomplete="off"
-                    autocapitalize="characters"
-                    spellcheck="false"
-                    placeholder="e.g. 90F5 B1C3 E295 0123 456"
-                    class="rounded-xl border border-gray-300 bg-white p-3 font-mono text-lg tracking-wider uppercase placeholder:normal-case dark:border-gray-700 dark:bg-gray-900"
-                />
+            <fieldset class="flex flex-col gap-2">
+                <legend class="mb-2 text-sm font-medium">
+                    Voter Identification Number (VIN), printed on your PVC
+                </legend>
+                <div class="flex items-end gap-3">
+                    <div class="flex flex-1 flex-col gap-1">
+                        <label
+                            for="vin_first"
+                            class="text-sm text-gray-600 dark:text-gray-400"
+                        >
+                            First {{ PART_LENGTH }}
+                        </label>
+                        <input
+                            id="vin_first"
+                            v-model="form.vin_first"
+                            v-focus
+                            type="text"
+                            :maxlength="PART_LENGTH"
+                            autocomplete="off"
+                            autocapitalize="characters"
+                            spellcheck="false"
+                            placeholder="90F5"
+                            class="w-full rounded-xl border border-gray-300 bg-white p-3 text-center font-mono text-lg tracking-widest uppercase dark:border-gray-700 dark:bg-gray-900"
+                        />
+                    </div>
+                    <span
+                        class="pb-3 font-mono text-lg text-gray-400"
+                        aria-hidden="true"
+                        >…</span
+                    >
+                    <div class="flex flex-1 flex-col gap-1">
+                        <label
+                            for="vin_last"
+                            class="text-sm text-gray-600 dark:text-gray-400"
+                        >
+                            Last {{ PART_LENGTH }}
+                        </label>
+                        <input
+                            id="vin_last"
+                            v-model="form.vin_last"
+                            type="text"
+                            :maxlength="PART_LENGTH"
+                            autocomplete="off"
+                            autocapitalize="characters"
+                            spellcheck="false"
+                            placeholder="3456"
+                            class="w-full rounded-xl border border-gray-300 bg-white p-3 text-center font-mono text-lg tracking-widest uppercase dark:border-gray-700 dark:bg-gray-900"
+                        />
+                    </div>
+                </div>
                 <button
                     v-if="isTestMode"
                     type="button"
@@ -139,14 +178,10 @@ function submit(): void {
                 >
                     Generate a test VIN
                 </button>
-                <p class="text-sm text-gray-500">
-                    {{ VIN_LENGTH }} characters, printed on your PVC.
-                    {{ normalizedVin.length }}/{{ VIN_LENGTH }}
+                <p v-if="vinError" class="text-sm text-red-600">
+                    {{ vinError }}
                 </p>
-                <p v-if="form.errors.vin" class="text-sm text-red-600">
-                    {{ form.errors.vin }}
-                </p>
-            </div>
+            </fieldset>
 
             <div v-if="turnstileSiteKey" class="flex flex-col gap-2">
                 <TurnstileWidget
@@ -170,12 +205,6 @@ function submit(): void {
                 >
                     {{ form.processing ? 'Checking…' : 'Continue' }}
                 </button>
-                <Link
-                    :href="results()"
-                    class="mt-3 block text-center text-sm font-medium text-green-700 dark:text-green-400"
-                >
-                    See the results
-                </Link>
             </div>
         </form>
     </div>

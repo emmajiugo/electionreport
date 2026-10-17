@@ -14,7 +14,8 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
 
-const VIN = '90F5B1C3E2950123456';
+const VIN_FIRST = '90F5';
+const VIN_LAST = '3456';
 
 beforeEach(function () {
     $this->election = Election::factory()->create();
@@ -23,11 +24,11 @@ beforeEach(function () {
     $this->pollingUnit = PollingUnit::factory()->create();
 });
 
-function enterVin(string $vin = VIN): void
+function enterVin(string $first = VIN_FIRST, string $last = VIN_LAST, ?int $reportId = null): void
 {
-    $vin = VoterIdentificationNumber::fromInput($vin);
+    $vin = VoterIdentificationNumber::fromParts($first, $last);
 
-    test()->withSession([EnsureVinEntered::SESSION_KEY => ['hash' => $vin->hash(), 'masked' => $vin->masked()]]);
+    test()->withSession([EnsureVinEntered::SESSION_KEY => ['hash' => $vin->hash(), 'masked' => $vin->masked(), 'report_id' => $reportId]]);
 }
 
 /**
@@ -83,9 +84,11 @@ test('story mode gets the same election, parties and reasons as the report form'
 });
 
 test('reporting routes cannot be reached without entering a VIN', function () {
-    $this->get(route('reports.create'))->assertRedirect(route('home'));
-    $this->get(route('reports.play'))->assertRedirect(route('home'));
-    $this->post(route('reports.store'), votedReport())->assertRedirect(route('home'));
+    $this->get(route('reports.create'))->assertRedirect(route('vin.create'));
+    $this->get(route('reports.play'))->assertRedirect(route('vin.create'));
+    $this->post(route('reports.store'), votedReport())->assertRedirect(route('vin.create'));
+    $this->post(route('reports.another'))->assertRedirect(route('vin.create'));
+    $this->getJson(route('reports.check', $this->pollingUnit))->assertUnauthorized();
 
     expect(Report::count())->toBe(0);
 });
@@ -99,10 +102,10 @@ test('a voter can report who they voted for without the raw VIN being stored', f
 
     expect($report->party_id)->toBe($this->party->id)
         ->and($report->voted)->toBeTrue()
-        ->and($report->vin_hash)->toBe(VoterIdentificationNumber::fromInput(VIN)->hash())
+        ->and($report->vin_hash)->toBe(VoterIdentificationNumber::fromParts(VIN_FIRST, VIN_LAST)->hash())
         ->and($report->vin_masked)->toBe('90F5***********3456')
         ->and($report->ip_hash)->not->toBe('127.0.0.1')
-        ->and(json_encode(Report::query()->toBase()->first()))->not->toContain(VIN);
+        ->and(json_encode(Report::query()->toBase()->first()))->not->toContain(VIN_FIRST.VIN_LAST);
 });
 
 test('reporting the election did not hold ends the VIN session and shows the thank you page once', function () {
@@ -118,13 +121,15 @@ test('reporting the election did not hold ends the VIN session and shows the tha
         ->component('Report/Submitted')
         ->where('canAddResultSheet', false));
     $this->get(route('reports.submitted'))->assertRedirect(route('home'));
-    $this->get(route('reports.create'))->assertRedirect(route('home'));
+    $this->get(route('reports.create'))->assertRedirect(route('vin.create'));
 });
 
 test('reporting the election held keeps the VIN session so the voter can add the result sheet', function () {
     enterVin();
 
-    $this->post(route('reports.store'), votedReport())->assertSessionHas(EnsureVinEntered::SESSION_KEY);
+    $this->post(route('reports.store'), votedReport());
+
+    expect(session(EnsureVinEntered::REPORT_KEY))->toBe(Report::sole()->id);
 
     $this->get(route('reports.submitted'))->assertInertia(fn (Assert $page) => $page->where('canAddResultSheet', true));
     $this->get(route('reports.create'))->assertRedirect(route('result-sheets.create'));
@@ -188,16 +193,54 @@ test('choosing other as the reason requires details', function () {
     expect(Report::sole()->reason_details)->toBe('Agents seized the ballot box');
 });
 
-test('a VIN that reported after entering it cannot report again', function () {
+test('a VIN that reported after entering it cannot report the same polling unit again', function () {
     enterVin();
-    Report::factory()->for($this->election)->create([
-        'vin_hash' => VoterIdentificationNumber::fromInput(VIN)->hash(),
+    Report::factory()->for($this->election)->for($this->pollingUnit)->create([
+        'vin_hash' => VoterIdentificationNumber::fromParts(VIN_FIRST, VIN_LAST)->hash(),
     ]);
 
     $this->post(route('reports.store'), votedReport())
         ->assertSessionHasErrors(['vin' => Election::duplicateVinMessage()]);
 
     expect(Report::count())->toBe(1);
+});
+
+test('picking a polling unit tells the voter straight away whether their VIN already reported it', function () {
+    enterVin();
+    $otherUnit = PollingUnit::factory()->create();
+    Report::factory()->for($this->election)->for($this->pollingUnit)->create([
+        'vin_hash' => VoterIdentificationNumber::fromParts(VIN_FIRST, VIN_LAST)->hash(),
+    ]);
+
+    $this->getJson(route('reports.check', $this->pollingUnit))->assertOk()->assertExactJson(['error' => Election::duplicateVinMessage()]);
+    $this->getJson(route('reports.check', $otherUnit))->assertOk()->assertExactJson(['error' => null]);
+});
+
+test('a partial VIN already used at one polling unit can report another', function () {
+    // Two voters can share the first and last characters of their VINs.
+    enterVin();
+    Report::factory()->for($this->election)->for(PollingUnit::factory())->create([
+        'vin_hash' => VoterIdentificationNumber::fromParts(VIN_FIRST, VIN_LAST)->hash(),
+    ]);
+
+    $this->post(route('reports.store'), votedReport())->assertRedirect(route('reports.submitted'));
+
+    expect(Report::query()->where('polling_unit_id', $this->pollingUnit->id)->count())->toBe(1);
+});
+
+test('a voter sent to someone else\'s report can report their own polling unit instead', function () {
+    $report = Report::factory()->for($this->election)->create([
+        'vin_hash' => VoterIdentificationNumber::fromParts(VIN_FIRST, VIN_LAST)->hash(),
+    ]);
+    enterVin(reportId: $report->id);
+    $this->get(route('reports.create'))->assertRedirect(route('result-sheets.create'));
+
+    $this->post(route('reports.another'))
+        ->assertRedirect(route('reports.create'))
+        ->assertSessionHas(EnsureVinEntered::SESSION_KEY.'.hash', VoterIdentificationNumber::fromParts(VIN_FIRST, VIN_LAST)->hash());
+
+    expect(session(EnsureVinEntered::REPORT_KEY))->toBeNull();
+    $this->get(route('reports.create'))->assertOk();
 });
 
 test('invalid report input is rejected', function (array $overrides, string $field) {
@@ -233,11 +276,11 @@ test('report submissions are rate limited per session, not per shared IP', funct
     $this->withCookie(config('session.cookie'), Str::random(40));
 
     foreach (range(1, 10) as $attempt) {
-        enterVin(str_pad((string) $attempt, 19, 'A'));
+        enterVin(str_pad((string) $attempt, 4, 'A'));
         $this->post(route('reports.store'), $notHeldReport);
     }
 
-    enterVin(str_repeat('B', 19));
+    enterVin('BBBB');
     $this->post(route('reports.store'), $notHeldReport)->assertTooManyRequests();
 
     $this->withCookie(config('session.cookie'), Str::random(40))

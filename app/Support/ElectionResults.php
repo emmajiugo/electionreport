@@ -53,16 +53,13 @@ final readonly class ElectionResults
     }
 
     /**
-     * @return array{polling_units: int, corroborated: int, contested: int, units: list<array<string, mixed>>}
+     * Counts only; the polling units themselves are listed on their own page so the dashboard stays light.
+     *
+     * @return array{polling_units: int, corroborated: int, contested: int}
      */
     private function resultSheets(): array
     {
-        $coverage = new ResultSheetCoverage($this->election, $this->state);
-
-        return [
-            ...$coverage->summary(),
-            'units' => $this->state ? $coverage->pollingUnits() : [],
-        ];
+        return (new ResultSheetCoverage($this->election, $this->state))->summary();
     }
 
     /**
