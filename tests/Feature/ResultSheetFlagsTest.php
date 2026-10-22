@@ -109,15 +109,6 @@ test('the same photo uploaded twice at one polling unit is not flagged as reused
     assertFlags(1, []);
 });
 
-test('a sheet uploaded before polls closed is flagged', function (string $uploadedAt, array $expected) {
-    sheetAtFlaggedUnit(['created_at' => lagosTime($uploadedAt)]);
-
-    assertFlags(0, $expected);
-})->with([
-    'a minute before polls closed' => ['14:29', [ResultSheetFlag::EarlyUpload]],
-    'a minute after polls closed' => ['14:31', []],
-]);
-
 test('confirmations are flagged when they arrive together or from one address', function (Closure $confirmations, array $expected) {
     $sheet = sheetAtFlaggedUnit();
 

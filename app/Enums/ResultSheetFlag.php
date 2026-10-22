@@ -9,7 +9,6 @@ namespace App\Enums;
 enum ResultSheetFlag: string
 {
     case ReusedImage = 'reused_image';
-    case EarlyUpload = 'early_upload';
     case ConfirmationBurst = 'confirmation_burst';
     case PartyVotesDontMatchTotal = 'party_votes_dont_match_total';
     case MoreVotesThanAccredited = 'more_votes_than_accredited';
@@ -18,7 +17,6 @@ enum ResultSheetFlag: string
     {
         return match ($this) {
             self::ReusedImage => 'The same photo was uploaded for another polling unit',
-            self::EarlyUpload => 'Uploaded before polls closed',
             self::ConfirmationBurst => 'Many confirmations arrived together',
             self::PartyVotesDontMatchTotal => 'Party votes do not add up to the total valid votes',
             self::MoreVotesThanAccredited => 'More votes than accredited voters',

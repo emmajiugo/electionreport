@@ -53,17 +53,4 @@ return [
 
     'result_sheet_disk' => env('ELECTIONREPORT_RESULT_SHEET_DISK', 'public'),
 
-    /*
-    |--------------------------------------------------------------------------
-    | Results Not Before
-    |--------------------------------------------------------------------------
-    |
-    | Lagos time on election day when polls close. Counting only starts after
-    | this, so a result sheet uploaded earlier is flagged. INEC closed polls
-    | at 14:30 in 2023; update this if INEC announces a different time.
-    |
-    */
-
-    'results_not_before' => env('ELECTIONREPORT_RESULTS_NOT_BEFORE', '14:30'),
-
 ];

@@ -8,7 +8,6 @@ use App\Enums\ReviewVerdict;
 use App\Models\Election;
 use App\Models\ResultSheet;
 use App\Models\ResultSheetReview;
-use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 
@@ -26,8 +25,6 @@ final class ResultSheetFlags
 
     private const int BURST_WINDOW_SECONDS = 10 * 60;
 
-    private const string NIGERIA_TIMEZONE = 'Africa/Lagos';
-
     /**
      * @param  EloquentCollection<int, ResultSheet>  $sheets  sheets from one polling unit in the election
      * @return array<int, list<ResultSheetFlag>> flags keyed by sheet id
@@ -40,10 +37,6 @@ final class ResultSheetFlags
 
         // Every practice sheet is the same sample image, so in test mode they would all look reused.
         $reusedHashes = AppMode::current()->isTest() ? [] : self::hashesUsedAtOtherPollingUnits($election, $sheets);
-        $pollsClose = CarbonImmutable::parse(
-            $election->held_on->toDateString().' '.config('electionreport.results_not_before'),
-            self::NIGERIA_TIMEZONE,
-        );
         $confirmations = ResultSheetReview::query()
             ->whereIn('result_sheet_id', $sheets->modelKeys())
             ->where('verdict', ReviewVerdict::Confirm)
@@ -53,7 +46,6 @@ final class ResultSheetFlags
         return $sheets->mapWithKeys(fn (ResultSheet $sheet): array => [
             $sheet->id => array_values(array_filter([
                 in_array($sheet->image_hash, $reusedHashes, true) ? ResultSheetFlag::ReusedImage : null,
-                $sheet->created_at?->lt($pollsClose) ? ResultSheetFlag::EarlyUpload : null,
                 self::isBurst($confirmations->get($sheet->id, collect())) ? ResultSheetFlag::ConfirmationBurst : null,
                 ...self::figureFlags($sheet),
             ])),

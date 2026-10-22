@@ -18,9 +18,14 @@ const statusClass: Record<ResultSheet['status'], string> = {
         'bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-200',
 };
 
+// Nigerian time for every viewer, so a voter abroad reads the same upload time as one at home.
 const timeFormat = new Intl.DateTimeFormat('en-NG', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
     hour: 'numeric',
     minute: '2-digit',
+    timeZone: 'Africa/Lagos',
 });
 
 function uploadedAt(sheet: ResultSheet): string {
@@ -45,7 +50,7 @@ function uploadedAt(sheet: ResultSheet): string {
                 <span>{{
                     sheet.is_yours ? 'Your upload' : 'Uploaded by a voter'
                 }}</span>
-                <span>{{ uploadedAt(sheet) }}</span>
+                <time :datetime="sheet.uploaded_at">{{ uploadedAt(sheet) }}</time>
             </p>
             <p
                 class="rounded-lg px-3 py-2 text-sm"
