@@ -96,7 +96,11 @@
     }
 }
 
-/* Chart tokens. Sequential ramp is one hue; dark mode has its own steps where more is lighter. */
+/*
+ * Chart tokens. Each ramp is one hue, light to dark, in both modes because darker reads as
+ * "more" on a map. Dark mode stops at a mid-dark step so the highest values still stand out
+ * from the background.
+ */
 :root {
     --viz-bar: #2a78d6;
     --viz-no-data: #e1e0d9;
@@ -105,16 +109,42 @@
     --viz-seq-3: #3987e5;
     --viz-seq-4: #256abf;
     --viz-seq-5: #104281;
+
+    /* Map problem metrics get their own hues so switching the map view visibly changes it. */
+    --viz-zero: #f0efec;
+    --viz-no-data-line: #b4b2a9;
+    --viz-red-1: #f87171;
+    --viz-red-2: #dc2626;
+    --viz-red-3: #b91c1c;
+    --viz-red-4: #7f1d1d;
+    --viz-red-5: #450a0a;
+    --viz-violet-1: #a78bfa;
+    --viz-violet-2: #8b5cf6;
+    --viz-violet-3: #6d28d9;
+    --viz-violet-4: #4c1d95;
+    --viz-violet-5: #2e1065;
 }
 
 @media (prefers-color-scheme: dark) {
     :root {
         --viz-bar: #3987e5;
         --viz-no-data: #2c2c2a;
-        --viz-seq-1: #104281;
-        --viz-seq-2: #1c5cab;
-        --viz-seq-3: #2a78d6;
-        --viz-seq-4: #5598e7;
-        --viz-seq-5: #9ec5f4;
+        --viz-zero: #383835;
+        --viz-no-data-line: #4a4a46;
+        --viz-red-1: #fecaca;
+        --viz-red-2: #fca5a5;
+        --viz-red-3: #f87171;
+        --viz-red-4: #dc2626;
+        --viz-red-5: #b91c1c;
+        --viz-violet-1: #ede9fe;
+        --viz-violet-2: #c4b5fd;
+        --viz-violet-3: #a78bfa;
+        --viz-violet-4: #8b5cf6;
+        --viz-violet-5: #6d28d9;
+        --viz-seq-1: #cde2fb;
+        --viz-seq-2: #86b6ef;
+        --viz-seq-3: #5598e7;
+        --viz-seq-4: #2a78d6;
+        --viz-seq-5: #1c5cab;
     }
 }

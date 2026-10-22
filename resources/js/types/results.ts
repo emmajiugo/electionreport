@@ -7,6 +7,8 @@ export type AreaResult = {
     not_held: number;
     voted: number;
     not_voted: number;
+    polling_units_reporting: number;
+    polling_units: number;
     leading_party: string | null;
 };
 

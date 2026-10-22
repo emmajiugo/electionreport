@@ -78,8 +78,12 @@ test('national results total every report for the open election', function () {
             ->where('results.states.0.reports', 2)
             ->where('results.states.0.not_held', 1)
             ->where('results.states.0.leading_party', 'APC')
+            ->where('results.states.0.polling_units_reporting', 1)
+            ->where('results.states.0.polling_units', 2)
             ->where('results.states.1.name', 'Lagos')
             ->where('results.states.1.reports', 4)
+            ->where('results.states.1.polling_units_reporting', 2)
+            ->where('results.states.1.polling_units', 2)
             ->where('results.states.1.not_voted', 1)
             ->where('results.states.1.leading_party', 'LP')
             ->where('results.lgas', []));
@@ -101,6 +105,8 @@ test('state results are scoped to that state and broken down by LGA', function (
             ->where('results.lgas.0.name', 'Ikeja')
             ->where('results.lgas.0.reports', 3)
             ->where('results.lgas.0.leading_party', 'LP')
+            ->where('results.lgas.0.polling_units_reporting', 1)
+            ->where('results.lgas.0.polling_units', 1)
             ->where('results.lgas.1.name', 'Surulere')
             ->where('results.lgas.1.reports', 1));
 });

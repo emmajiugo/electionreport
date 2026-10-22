@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Cache;
 /**
  * Aggregates voter reports for the public results dashboard, nationally or for one state.
  *
- * @phpstan-type AreaRow array{id: int, code: string, name: string, reports: int, held: int, not_held: int, voted: int, not_voted: int, leading_party: string|null}
+ * @phpstan-type AreaRow array{id: int, code: string, name: string, reports: int, held: int, not_held: int, voted: int, not_voted: int, polling_units_reporting: int, polling_units: int, leading_party: string|null}
  */
 final readonly class ElectionResults
 {
@@ -168,20 +168,34 @@ final readonly class ElectionResults
     {
         $tallies = $this->reports($nationally)
             ->groupBy($groupColumn)
-            ->selectRaw("{$groupColumn} as area_id, ".self::TALLIES)
+            ->selectRaw("{$groupColumn} as area_id, ".self::TALLIES.', count(distinct reports.polling_unit_id) as polling_units_reporting')
             ->toBase()
             ->get()
             ->keyBy('area_id');
 
+        /** @var Collection<int, int|string> $pollingUnits */
+        $pollingUnits = PollingUnit::query()
+            ->join('wards', 'wards.id', '=', 'polling_units.ward_id')
+            ->join('lgas', 'lgas.id', '=', 'wards.lga_id')
+            ->when(! $nationally && $this->state, fn (Builder $query) => $query->where('lgas.state_id', $this->state?->id))
+            ->groupBy($groupColumn)
+            ->selectRaw("{$groupColumn} as area_id, count(*) as total")
+            ->toBase()
+            ->pluck('total', 'area_id');
+
         $leaders = $this->leadingParties($groupColumn, $nationally);
 
-        return $areas->map(function (Model $area) use ($tallies, $leaders): array {
+        return $areas->map(function (Model $area) use ($tallies, $pollingUnits, $leaders): array {
             /** @var State|Lga $area */
+            $row = $tallies->get($area->id);
+
             return [
                 'id' => $area->id,
                 'code' => $area->code,
                 'name' => $area->name,
-                ...$this->tallies($tallies->get($area->id)),
+                ...$this->tallies($row),
+                'polling_units_reporting' => (int) ($row->polling_units_reporting ?? 0),
+                'polling_units' => (int) ($pollingUnits[$area->id] ?? 0),
                 'leading_party' => $leaders[$area->id] ?? null,
             ];
         })->pipe(fn (Collection $rows): array => array_values($rows->all()));

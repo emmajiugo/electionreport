@@ -14,17 +14,37 @@ const emit = defineEmits<{
     select: [state: AreaResult];
 }>();
 
-const BIN_COLORS = [
-    'var(--viz-seq-1)',
-    'var(--viz-seq-2)',
-    'var(--viz-seq-3)',
-    'var(--viz-seq-4)',
-    'var(--viz-seq-5)',
-];
+const ramp = (name: string): string[] =>
+    [1, 2, 3, 4, 5].map((step) => `var(--viz-${name}-${step})`);
+
+const RAMPS: Record<MapMetric, string[]> = {
+    reports: ramp('seq'),
+    not_held: ramp('red'),
+    not_voted: ramp('violet'),
+};
+
+// Fixed bands so a colour means the same thing on every visit. Coverage starts near zero and grows
+// through election day; the problem shares mostly sit under 20%. Both are narrow at the low end.
+const BIN_LIMITS: Record<MapMetric, number[]> = {
+    reports: [1, 5, 10, 25, 100],
+    not_held: [5, 10, 20, 40, 100],
+    not_voted: [5, 10, 20, 40, 100],
+};
 
 const statesByCode = computed(
     () => new Map(props.states.map((state) => [state.code, state])),
 );
+
+/**
+ * Coverage keeps one decimal because a state can sit well under 1% for most of the day.
+ */
+function coverage(state: AreaResult): number | null {
+    return state.polling_units > 0
+        ? Math.round(
+              (state.polling_units_reporting / state.polling_units) * 1000,
+          ) / 10
+        : null;
+}
 
 function metricValue(state: AreaResult | undefined): number | null {
     if (!state || state.reports === 0) {
@@ -37,30 +57,27 @@ function metricValue(state: AreaResult | undefined): number | null {
         case 'not_voted':
             return percent(state.not_voted, state.held);
         default:
-            return state.reports;
+            return coverage(state);
     }
 }
 
-type Bin = { min: number; max: number; color: string };
+type Bin = { max: number; color: string; label: string };
 
-// Percentages use fixed 20-point bins so colours mean the same thing on every visit; counts scale to the busiest state.
-// Zero reports is its own "No reports" class, so count bins start at 1.
+// No reports gets its own hatched class, and zero percent of a problem its own neutral class,
+// so only states with a problem take that view's colour.
 const bins = computed<Bin[]>(() => {
-    if (props.metric !== 'reports') {
-        return BIN_COLORS.map((color, index) => ({
-            min: index === 0 ? 0 : index * 20 + 1,
-            max: (index + 1) * 20,
-            color,
-        }));
-    }
+    const colors = RAMPS[props.metric];
+    const limits = BIN_LIMITS[props.metric];
 
-    const max = Math.max(...props.states.map((state) => state.reports), 0);
-    const step = Math.max(1, Math.ceil(max / BIN_COLORS.length));
-
-    return BIN_COLORS.map((color, index) => ({
-        min: index * step + 1,
-        max: (index + 1) * step,
-        color,
+    return limits.map((max, index) => ({
+        max,
+        color: colors[index],
+        label:
+            index === 0
+                ? `Up to ${max}%`
+                : index === limits.length - 1
+                  ? `Over ${limits[index - 1]}%`
+                  : `${limits[index - 1]}–${max}%`,
     }));
 });
 
@@ -68,7 +85,11 @@ function fill(code: string): string {
     const value = metricValue(statesByCode.value.get(code));
 
     if (value === null) {
-        return 'var(--viz-no-data)';
+        return 'url(#no-reports)';
+    }
+
+    if (value === 0 && props.metric !== 'reports') {
+        return 'var(--viz-zero)';
     }
 
     return (
@@ -82,21 +103,27 @@ const hasReports = computed(() =>
 );
 
 const legend = computed(() => {
-    const unit = props.metric === 'reports' ? '' : '%';
+    const items = bins.value.map(({ color, label }) => ({ color, label }));
 
-    return bins.value.map((bin) => ({
-        color: bin.color,
-        label:
-            bin.min === bin.max
-                ? `${formatNumber(bin.min)}${unit}`
-                : `${formatNumber(bin.min)}–${formatNumber(bin.max)}${unit}`,
-    }));
+    return props.metric === 'reports'
+        ? items
+        : [{ color: 'var(--viz-zero)', label: '0%' }, ...items];
 });
+
+const legendTitle = computed(
+    () =>
+        ({
+            reports: 'Share of polling units with at least one report',
+            not_held: "Share of reports saying the election didn't hold",
+            not_voted:
+                "Share of voters who couldn't vote where the election held",
+        })[props.metric],
+);
 
 const metricLabel = computed(
     () =>
         ({
-            reports: 'Reports',
+            reports: 'Polling units reporting',
             not_held: "Election didn't hold",
             not_voted: "Couldn't vote",
         })[props.metric],
@@ -109,7 +136,7 @@ function describe(code: string, name: string): string {
         return `${name}: no reports`;
     }
 
-    return `${name}: ${metricLabel.value} ${props.metric === 'reports' ? formatNumber(value) : formatPercent(value)}`;
+    return `${name}: ${metricLabel.value} ${formatPercent(value)}`;
 }
 
 const container = ref<HTMLElement | null>(null);
@@ -155,6 +182,29 @@ function select(code: string): void {
                 :aria-label="`Map of Nigerian states coloured by ${metricLabel.toLowerCase()}`"
                 @pointerleave="tooltip = null"
             >
+                <defs>
+                    <pattern
+                        id="no-reports"
+                        width="10"
+                        height="10"
+                        patternUnits="userSpaceOnUse"
+                        patternTransform="rotate(45)"
+                    >
+                        <rect
+                            width="10"
+                            height="10"
+                            fill="var(--viz-no-data)"
+                        />
+                        <line
+                            x1="0"
+                            y1="0"
+                            x2="0"
+                            y2="10"
+                            stroke="var(--viz-no-data-line)"
+                            stroke-width="3"
+                        />
+                    </pattern>
+                </defs>
                 <path
                     v-for="shape in geography.states"
                     :key="shape.code"
@@ -198,6 +248,12 @@ function select(code: string): void {
                     </p>
                     <p>
                         <span class="font-semibold tabular-nums">{{
+                            formatPercent(coverage(tooltipState))
+                        }}</span>
+                        <span class="text-gray-500"> of polling units</span>
+                    </p>
+                    <p>
+                        <span class="font-semibold tabular-nums">{{
                             formatPercent(
                                 percent(
                                     tooltipState.not_held,
@@ -225,9 +281,12 @@ function select(code: string): void {
             </div>
         </div>
 
+        <p class="-mb-1 text-xs font-medium text-gray-700 dark:text-gray-300">
+            {{ legendTitle }}
+        </p>
         <ul
             class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600 dark:text-gray-400"
-            :aria-label="`${metricLabel} legend`"
+            :aria-label="legendTitle"
         >
             <li
                 v-for="bin in hasReports ? legend : []"
@@ -241,7 +300,9 @@ function select(code: string): void {
                 {{ bin.label }}
             </li>
             <li class="flex items-center gap-1.5">
-                <span class="size-3 rounded-sm bg-(--viz-no-data)" />
+                <span
+                    class="size-3 rounded-sm bg-[repeating-linear-gradient(45deg,var(--viz-no-data-line)_0_1.5px,var(--viz-no-data)_1.5px_4px)]"
+                />
                 No reports
             </li>
         </ul>
