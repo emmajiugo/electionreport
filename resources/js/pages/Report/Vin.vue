@@ -67,7 +67,7 @@ function submit(): void {
 <template>
     <Head title="Enter your VIN" />
     <div
-        class="flex min-h-dvh flex-col bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100"
+        class="flex min-h-dvh flex-col bg-gray-200 text-gray-900 dark:bg-gray-950 dark:text-gray-100"
     >
         <AppHeader :election-name="election?.name" />
 

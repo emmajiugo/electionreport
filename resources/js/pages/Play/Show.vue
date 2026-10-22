@@ -112,7 +112,7 @@ const skyClass = computed(() => {
 <template>
     <Head title="Your day at the polling unit" />
     <div
-        class="flex min-h-dvh flex-col bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100"
+        class="flex min-h-dvh flex-col bg-gray-200 text-gray-900 dark:bg-gray-950 dark:text-gray-100"
     >
         <AppHeader
             :election-name="election?.name"
@@ -300,7 +300,7 @@ const skyClass = computed(() => {
             </div>
 
             <div
-                class="sticky bottom-0 mt-auto flex flex-col gap-3 bg-gray-50 pt-2 pb-4 dark:bg-gray-950"
+                class="sticky bottom-0 mt-auto flex flex-col gap-3 bg-gray-200 pt-2 pb-4 dark:bg-gray-950"
             >
                 <button
                     v-if="!scene.choices"

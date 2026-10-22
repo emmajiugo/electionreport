@@ -123,7 +123,7 @@ function selectFromMap(state: AreaResult): void {
 <template>
     <Head :title="`Results · ${scopeName}`" />
     <div
-        class="flex min-h-dvh flex-col bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100"
+        class="flex min-h-dvh flex-col bg-gray-200 text-gray-900 dark:bg-gray-950 dark:text-gray-100"
     >
         <AppHeader :election-name="election?.name" />
 
