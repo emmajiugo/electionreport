@@ -54,6 +54,11 @@
         appearance: base-select;
     }
 
+    /* A customizable select lays its text out at the top; fixed-height fields need it centred. */
+    select {
+        align-items: center;
+    }
+
     select::picker-icon {
         display: none;
     }
