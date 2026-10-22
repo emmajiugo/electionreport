@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { Link, usePage } from '@inertiajs/vue3';
-import { computed, onMounted, ref } from 'vue';
-import { feedback, home } from '@/routes';
+import { Link, usePage } from "@inertiajs/vue3";
+import { computed, onMounted, ref } from "vue";
+import { feedback, home } from "@/routes";
 
 defineProps<{
     electionName?: string;
@@ -13,21 +13,21 @@ defineEmits<{
 }>();
 
 const page = usePage();
-const isTestMode = computed(() => page.props.mode === 'test');
+const isTestMode = computed(() => page.props.mode === "test");
 
 // The root template sets the starting theme before paint; this only mirrors and changes it.
 const isDark = ref(true);
 
 onMounted(() => {
-    isDark.value = document.documentElement.classList.contains('dark');
+    isDark.value = document.documentElement.classList.contains("dark");
 });
 
 function toggleAppearance(): void {
     isDark.value = !isDark.value;
-    document.documentElement.classList.toggle('dark', isDark.value);
+    document.documentElement.classList.toggle("dark", isDark.value);
 
     try {
-        localStorage.setItem('appearance', isDark.value ? 'dark' : 'light');
+        localStorage.setItem("appearance", isDark.value ? "dark" : "light");
     } catch {
         // Private browsing can block storage; the switch still works for this page.
     }
@@ -56,7 +56,10 @@ function toggleAppearance(): void {
                     <path d="M15 18l-6-6 6-6" />
                 </svg>
             </button>
-            <Link :href="home()" class="flex items-center gap-2 font-semibold">
+            <Link
+                :href="home()"
+                class="flex shrink-0 items-center gap-2 font-semibold"
+            >
                 <img src="/favicon.svg" alt="" class="size-7" />
                 <span
                     ><span class="text-gray-800 dark:text-gray-100"
@@ -68,13 +71,13 @@ function toggleAppearance(): void {
             </Link>
             <span
                 v-if="isTestMode"
-                class="rounded bg-amber-400 px-1.5 py-0.5 text-xs font-bold tracking-wide text-amber-950"
+                class="shrink-0 rounded bg-amber-400 px-1.5 py-0.5 text-xs font-bold tracking-wide text-amber-950"
             >
                 TEST
             </span>
             <span
                 v-if="electionName"
-                class="ml-auto truncate text-sm text-gray-500"
+                class="ml-auto min-w-0 truncate text-sm text-gray-500"
             >
                 {{ electionName }}
             </span>
