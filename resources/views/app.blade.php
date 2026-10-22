@@ -1,8 +1,17 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}"  @class(['dark' => ($appearance ?? 'system') == 'dark'])>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dark">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        {{-- Dark is the default; this runs before first paint so a voter who chose light never sees a dark flash. --}}
+        <script>
+            try {
+                if (localStorage.getItem('appearance') === 'light') {
+                    document.documentElement.classList.remove('dark');
+                }
+            } catch {}
+        </script>
 
         <link rel="icon" href="/favicon.ico" sizes="any">
         <link rel="icon" href="/favicon.svg" type="image/svg+xml">

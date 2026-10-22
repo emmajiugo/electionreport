@@ -1,5 +1,16 @@
 @import 'tailwindcss';
 
+/* The voter picks light or dark in the header; the root element carries `dark` by default. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+    color-scheme: light;
+}
+
+:root.dark {
+    color-scheme: dark;
+}
+
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 
@@ -78,21 +89,19 @@
         color: var(--color-gray-400);
     }
 
-    @media (prefers-color-scheme: dark) {
-        ::picker(select) {
-            border-color: var(--color-gray-700);
-            background: var(--color-gray-900);
-            color: var(--color-gray-100);
-        }
+    .dark ::picker(select) {
+        border-color: var(--color-gray-700);
+        background: var(--color-gray-900);
+        color: var(--color-gray-100);
+    }
 
-        select option:hover,
-        select option:focus-visible {
-            background: var(--color-gray-800);
-        }
+    .dark select option:hover,
+    .dark select option:focus-visible {
+        background: var(--color-gray-800);
+    }
 
-        select option:disabled {
-            color: var(--color-gray-500);
-        }
+    .dark select option:disabled {
+        color: var(--color-gray-500);
     }
 }
 
@@ -125,26 +134,24 @@
     --viz-violet-5: #2e1065;
 }
 
-@media (prefers-color-scheme: dark) {
-    :root {
-        --viz-bar: #3987e5;
-        --viz-no-data: #2c2c2a;
-        --viz-zero: #383835;
-        --viz-no-data-line: #4a4a46;
-        --viz-red-1: #fecaca;
-        --viz-red-2: #fca5a5;
-        --viz-red-3: #f87171;
-        --viz-red-4: #dc2626;
-        --viz-red-5: #b91c1c;
-        --viz-violet-1: #ede9fe;
-        --viz-violet-2: #c4b5fd;
-        --viz-violet-3: #a78bfa;
-        --viz-violet-4: #8b5cf6;
-        --viz-violet-5: #6d28d9;
-        --viz-seq-1: #cde2fb;
-        --viz-seq-2: #86b6ef;
-        --viz-seq-3: #5598e7;
-        --viz-seq-4: #2a78d6;
-        --viz-seq-5: #1c5cab;
-    }
+:root.dark {
+    --viz-bar: #3987e5;
+    --viz-no-data: #2c2c2a;
+    --viz-zero: #383835;
+    --viz-no-data-line: #4a4a46;
+    --viz-red-1: #fecaca;
+    --viz-red-2: #fca5a5;
+    --viz-red-3: #f87171;
+    --viz-red-4: #dc2626;
+    --viz-red-5: #b91c1c;
+    --viz-violet-1: #ede9fe;
+    --viz-violet-2: #c4b5fd;
+    --viz-violet-3: #a78bfa;
+    --viz-violet-4: #8b5cf6;
+    --viz-violet-5: #6d28d9;
+    --viz-seq-1: #cde2fb;
+    --viz-seq-2: #86b6ef;
+    --viz-seq-3: #5598e7;
+    --viz-seq-4: #2a78d6;
+    --viz-seq-5: #1c5cab;
 }
