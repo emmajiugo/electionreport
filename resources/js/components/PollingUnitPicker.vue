@@ -35,6 +35,13 @@ const filteredPollingUnits = computed(() => {
             unit.name.toLowerCase().includes(query),
     );
 });
+
+// Saves the voter opening the dropdown when their search already found the unit.
+watch(filteredPollingUnits, (units) => {
+    if (pollingUnitQuery.value.trim() !== '' && units.length === 1) {
+        pollingUnitId.value = units[0].id;
+    }
+});
 const loadingLocations = ref(false);
 const locationError = ref<string | null>(null);
 
@@ -149,37 +156,52 @@ const selectClass = `${fieldClass} appearance-none pr-10`;
             <label for="polling-unit" class="text-sm font-medium">
                 Polling unit
             </label>
-            <input
+            <p
                 v-if="pollingUnitOptions.length"
-                v-model="pollingUnitQuery"
-                type="search"
-                aria-label="Search polling units"
-                :placeholder="`Search ${pollingUnitOptions.length} polling units`"
-                :class="fieldClass"
-            />
-            <div class="relative">
-                <select
-                    id="polling-unit"
-                    v-model="pollingUnitId"
-                    :disabled="!pollingUnitOptions.length"
-                    :class="selectClass"
-                >
-                    <option :value="null" disabled>
-                        {{
-                            pollingUnitQuery && !filteredPollingUnits.length
-                                ? 'No polling units match your search'
-                                : `Select polling unit${pollingUnitQuery ? ` (${filteredPollingUnits.length} found)` : ''}`
-                        }}
-                    </option>
-                    <option
-                        v-for="unit in filteredPollingUnits"
-                        :key="unit.id"
-                        :value="unit.id"
+                id="polling-unit-help"
+                class="-mt-1 text-sm text-gray-500 dark:text-gray-400"
+            >
+                Type part of the name or number to narrow the list, then pick
+                yours.
+            </p>
+            <div
+                class="overflow-hidden rounded-xl border border-gray-300 bg-white focus-within:ring-2 focus-within:ring-gray-400 dark:border-gray-700 dark:bg-gray-900"
+                :class="{ 'opacity-50': !pollingUnitOptions.length }"
+            >
+                <input
+                    v-if="pollingUnitOptions.length"
+                    v-model="pollingUnitQuery"
+                    type="search"
+                    aria-label="Search polling units"
+                    aria-describedby="polling-unit-help"
+                    :placeholder="`Search ${pollingUnitOptions.length} polling units`"
+                    class="w-full border-0 border-b border-gray-200 bg-transparent p-3 text-base focus:ring-0 focus:outline-none dark:border-gray-700"
+                />
+                <div class="relative">
+                    <select
+                        id="polling-unit"
+                        v-model="pollingUnitId"
+                        :disabled="!pollingUnitOptions.length"
+                        aria-describedby="polling-unit-help"
+                        class="w-full appearance-none border-0 bg-transparent p-3 pr-10 text-base focus:ring-0 focus:outline-none"
                     >
-                        {{ unit.name }}
-                    </option>
-                </select>
-                <SelectChevron />
+                        <option :value="null" disabled>
+                            {{
+                                pollingUnitQuery && !filteredPollingUnits.length
+                                    ? 'No polling units match your search'
+                                    : `Select polling unit${pollingUnitQuery ? ` (${filteredPollingUnits.length} found)` : ''}`
+                            }}
+                        </option>
+                        <option
+                            v-for="unit in filteredPollingUnits"
+                            :key="unit.id"
+                            :value="unit.id"
+                        >
+                            {{ unit.name }}
+                        </option>
+                    </select>
+                    <SelectChevron />
+                </div>
             </div>
         </div>
         <p v-if="loadingLocations" class="text-sm text-gray-500">Loading…</p>
