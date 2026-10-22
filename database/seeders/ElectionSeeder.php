@@ -15,7 +15,7 @@ class ElectionSeeder extends Seeder
     {
         $election = Election::query()->updateOrCreate(
             ['name' => '2027 Presidential Election'],
-            ['held_on' => '2027-02-20', 'is_accepting_reports' => true],
+            ['held_on' => '2027-01-16', 'is_accepting_reports' => true],
         );
 
         $candidates = [
